@@ -1,0 +1,16 @@
+{
+  "short_name": "Memora",
+  "name": "Memora - Supporto Alzheimer",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#9C69A7",
+  "background_color": "#F7F3FA"
+}
