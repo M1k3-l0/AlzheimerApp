@@ -8,8 +8,8 @@ const ChatPage = () => {
     const [loading, setLoading] = useState(true);
 
     // Recupera utente corrente
-    const user = JSON.parse(localStorage.getItem('alzheimer_user') || '{}');
-    const currentUserId = user.name || 'Guest';
+    const user = JSON.parse(localStorage.getItem('alzheimer_user') || '{"name":"Utente"}');
+    const currentUserId = user.name + (user.surname || '');
 
     // Carica messaggi iniziali
     useEffect(() => {
@@ -21,13 +21,18 @@ const ChatPage = () => {
             .on('postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'messages' },
                 (payload) => {
-                    setMessages(prev => [...prev, {
-                        id: payload.new.id,
-                        text: payload.new.text,
-                        sender: payload.new.sender_id === currentUserId ? 'me' : 'other',
-                        senderName: payload.new.sender_name,
-                        time: new Date(payload.new.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
-                    }]);
+                    const msg = payload.new;
+                    setMessages(prev => {
+                        // Evita duplicati se l'insert arriva sia da risposta API che da realtime
+                        if (prev.find(m => m.id === msg.id)) return prev;
+                        return [...prev, {
+                            id: msg.id,
+                            text: msg.text,
+                            sender: msg.sender_id === currentUserId ? 'me' : 'other',
+                            senderName: msg.sender_name,
+                            time: new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+                        }];
+                    });
                 }
             )
             .subscribe();
@@ -38,19 +43,23 @@ const ChatPage = () => {
     }, [currentUserId]);
 
     const fetchMessages = async () => {
-        const { data, error } = await supabase
-            .from('messages')
-            .select('*')
-            .order('created_at', { ascending: true });
+        try {
+            const { data, error } = await supabase
+                .from('messages')
+                .select('*')
+                .order('created_at', { ascending: true });
 
-        if (!error && data) {
-            setMessages(data.map(msg => ({
-                id: msg.id,
-                text: msg.text,
-                sender: msg.sender_id === currentUserId ? 'me' : 'other',
-                senderName: msg.sender_name,
-                time: new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
-            })));
+            if (!error && data) {
+                setMessages(data.map(msg => ({
+                    id: msg.id,
+                    text: msg.text,
+                    sender: msg.sender_id === currentUserId ? 'me' : 'other',
+                    senderName: msg.sender_name,
+                    time: new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+                })));
+            }
+        } catch (e) {
+            console.error("Errore fetch messaggi");
         }
         setLoading(false);
     };
@@ -76,7 +85,7 @@ const ChatPage = () => {
             display: 'flex',
             flexDirection: 'column',
             height: '100%',
-            backgroundColor: '#EFE7DE', // WhatsApp-like bg
+            backgroundColor: 'var(--color-bg-primary)',
         },
         messageList: {
             flex: 1,
@@ -85,70 +94,89 @@ const ChatPage = () => {
             display: 'flex',
             flexDirection: 'column',
             gap: '12px',
+            paddingBottom: '20px'
         },
         messageBubble: (sender) => ({
-            maxWidth: '80%',
+            maxWidth: '85%',
             padding: '12px 16px',
-            borderRadius: '16px',
-            backgroundColor: sender === 'me' ? '#dcf8c6' : '#ffffff',
+            borderRadius: '18px',
+            backgroundColor: sender === 'me' ? 'var(--color-primary)' : 'white',
+            color: sender === 'me' ? 'white' : 'var(--color-text-primary)',
             alignSelf: sender === 'me' ? 'flex-end' : 'flex-start',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-            position: 'relative',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+            borderBottomRightRadius: sender === 'me' ? '4px' : '18px',
+            borderBottomLeftRadius: sender === 'me' ? '18px' : '4px',
         }),
         messageText: {
-            fontSize: '17px',
+            fontSize: '16px',
             lineHeight: '1.4',
+            fontWeight: '500'
         },
-        messageTime: {
-            fontSize: '11px',
-            color: '#999',
+        messageTime: (sender) => ({
+            fontSize: '10px',
+            color: sender === 'me' ? 'rgba(255,255,255,0.7)' : '#999',
             textAlign: 'right',
             marginTop: '4px',
-        },
+        }),
         inputArea: {
-            padding: '10px',
-            backgroundColor: '#f0f0f0',
+            padding: '12px 16px',
+            backgroundColor: 'white',
             display: 'flex',
             alignItems: 'center',
-            gap: '10px',
-            borderTop: '1px solid #ddd',
+            gap: '12px',
+            borderTop: '1px solid var(--color-border)',
+            paddingBottom: 'calc(12px + var(--safe-area-bottom))'
         },
         input: {
             flex: 1,
-            padding: '12px',
-            borderRadius: '24px',
-            border: '1px solid #ddd',
+            padding: '12px 20px',
+            borderRadius: '25px',
+            border: '1px solid #eee',
+            backgroundColor: '#F3F4F6',
             fontSize: '16px',
             outline: 'none',
         },
         sendButton: {
-            width: '48px',
-            height: '48px',
+            width: '45px',
+            height: '45px',
             borderRadius: '50%',
-            backgroundColor: '#007aff',
+            backgroundColor: 'var(--color-primary)',
             color: 'white',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            border: 'none',
+            cursor: 'pointer',
+            boxShadow: '0 2px 5px rgba(156, 105, 167, 0.3)'
         }
     };
 
     if (loading) {
-        return <div style={{ ...styles.container, justifyContent: 'center', alignItems: 'center' }}>
-            <div>Caricamento chat...</div>
-        </div>;
+        return (
+            <div style={{ ...styles.container, justifyContent: 'center', alignItems: 'center' }}>
+                <div style={{color: 'var(--color-primary)', fontWeight: 'bold'}}>Apertura chat...</div>
+            </div>
+        );
     }
 
     return (
         <div style={styles.container}>
             <div style={styles.messageList}>
-                {messages.map(msg => (
-                    <div key={msg.id} style={styles.messageBubble(msg.sender)}>
-                        {msg.sender === 'other' && <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>{msg.senderName}</div>}
-                        <div style={styles.messageText}>{msg.text}</div>
-                        <div style={styles.messageTime}>{msg.time}</div>
-                    </div>
-                ))}
+                {messages.length === 0 ? (
+                    <div style={{textAlign:'center', color:'#888', marginTop: '20px', fontSize: '14px'}}>Nessun messaggio. Inizia la conversazione! 👋</div>
+                ) : (
+                    messages.map(msg => (
+                        <div key={msg.id} style={styles.messageBubble(msg.sender)}>
+                            {msg.sender === 'other' && (
+                                <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-primary)', marginBottom: '4px' }}>
+                                    {msg.senderName}
+                                </div>
+                            )}
+                            <div style={styles.messageText}>{msg.text}</div>
+                            <div style={styles.messageTime(msg.sender)}>{msg.time}</div>
+                        </div>
+                    ))
+                )}
             </div>
             <div style={styles.inputArea}>
                 <input
@@ -157,9 +185,10 @@ const ChatPage = () => {
                     placeholder="Scrivi un messaggio..."
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                 />
                 <button style={styles.sendButton} onClick={handleSend}>
-                    <Send size={24} />
+                    <Send size={20} fill="white" />
                 </button>
             </div>
         </div>
