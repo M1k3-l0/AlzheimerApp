@@ -22,11 +22,29 @@ const SettingsPage = () => {
     return saved ? JSON.parse(saved) : { name: "Utente", surname: "", photo: null };
   });
 
-  const [notifications, setNotifications] = useState(() => localStorage.getItem("setting_notifications") === "true");
+  const [notifications, setNotifications] = useState(() => Notification.permission === "granted");
   const [largeText, setLargeText] = useState(() => localStorage.getItem("setting_largeText") === "true");
   const [sosNumber, setSosNumber] = useState(() => localStorage.getItem("setting_sosNumber") || "");
   const [isEditingSos, setIsEditingSos] = useState(false);
   const [tempSos, setTempSos] = useState(sosNumber);
+
+  const requestNotificationPermission = async () => {
+    if (!("Notification" in window)) {
+      alert("Il tuo browser non supporta le notifiche.");
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission === "granted") {
+      setNotifications(true);
+      new Notification("Memora: Notifiche Attive!", {
+        body: "Riceverai avvisi e messaggi in tempo reale su questo dispositivo.",
+        icon: "/logo.png"
+      });
+    } else {
+      setNotifications(false);
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem("setting_notifications", notifications);
@@ -80,12 +98,12 @@ const SettingsPage = () => {
 
       <h3 style={styles.sectionLabel}>Personalizzazione</h3>
       <div style={styles.menuCard}>
-        <button style={styles.menuItem} onClick={() => setNotifications(!notifications)}>
+        <button style={styles.menuItem} onClick={requestNotificationPermission}>
           <div style={{ display: "flex", alignItems: "center" }}>
             <div style={styles.iconWrapper("var(--color-primary)")}><Bell size={18} /></div>
             <div>
-              <span style={styles.itemLabel}>Notifiche</span>
-              <div style={{fontSize: '12px', color: '#888'}}>Avvisi e promemoria</div>
+              <span style={styles.itemLabel}>Notifiche Push</span>
+              <div style={{fontSize: '12px', color: '#888'}}>{notifications ? 'Attivate' : 'Clicca per attivare'}</div>
             </div>
           </div>
           <div style={{...styles.switch(notifications), backgroundColor: notifications ? 'var(--color-success)' : '#ddd'}}><div style={{width: 27, height: 27, background: 'white', borderRadius: '50%', position: 'absolute', top: 2, left: notifications ? 22 : 2, transition: '0.3s'}}/></div>
