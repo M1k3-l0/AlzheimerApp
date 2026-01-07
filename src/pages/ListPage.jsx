@@ -64,12 +64,12 @@ const ListPage = () => {
             outline: 'none'
         },
         addButton: {
-            padding: '0 24px',
-            backgroundColor: 'var(--color-primary)', // Brand Purple
+            padding: '0 20px',
+            backgroundColor: 'var(--color-primary)', 
             color: 'white',
             border: 'none',
             borderRadius: '12px',
-            fontSize: '18px',
+            fontSize: '16px',
             fontWeight: 'bold',
             cursor: 'pointer'
         },
@@ -95,10 +95,10 @@ const ListPage = () => {
                     style={styles.input}
                     value={newTaskText}
                     onChange={(e) => setNewTaskText(e.target.value)}
-                    placeholder="Nuova attività..."
+                    placeholder="Vuoi aggiungere un'attività?"
                 />
                 <button style={styles.addButton} onClick={addTask}>
-                    +
+                    Aggiungi
                 </button>
             </div>
 

@@ -1,19 +1,20 @@
 :root {
   /* Airalzh Brand Colors (Official) */
-  --color-primary: #4a304f; /* Prugna scuro */
-  --color-primary-light: #8b6d91; /* Viola medio */
-  --color-primary-lighter: #b697bd; /* Lilla */
-  --color-accent: #fdb913; /* Giallo Oro Airalzh */
-
-  --color-bg-primary: #f7f3fa; /* Sfondo lilla chiarissimo */
+  --color-primary: #4A304F;      /* Prugna scuro ufficiale */
+  --color-primary-light: #8B6D91; /* Viola medio */
+  --color-accent: #FDB913;       /* Giallo Oro Airalzh */
+  
+  --color-bg-primary: #F7F3FA;    /* Sfondo lilla chiarissimo */
+  --color-bg-secondary: #ffffff;  /* Bianco per le card */
   --color-bg-white: #ffffff;
 
-  --color-text-primary: #2d1f30; /* Testo prugna quasi nero */
-  --color-text-secondary: #6b7280;
-
-  --color-success: #34c759;
-  --color-error: #ff3b30;
-  --color-border: #e5e7eb;
+  --color-text-primary: #2D1F30;  /* Testo prugna quasi nero */
+  --color-text-secondary: #6B7280;
+  
+  --color-success: #34C759;
+  --color-error: #FF3B30;
+  --color-border: #E5E7EB;
+  --color-action: #4A304F;       /* Tasti attivi in prugna */
 
   /* Spacing & Sizes */
   --tab-bar-height: 84px;

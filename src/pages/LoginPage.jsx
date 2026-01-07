@@ -85,15 +85,16 @@ const LoginPage = () => {
             display: 'none'
         },
         title: {
-            fontSize: '24px',
-            fontWeight: 'bold',
-            marginBottom: '10px',
-            color: '#333'
+            fontSize: '32px',
+            fontWeight: '800',
+            marginBottom: '8px',
+            color: 'var(--color-primary)'
         },
         subtitle: {
-            fontSize: '16px',
-            color: '#666',
-            marginBottom: '30px'
+            fontSize: '18px',
+            color: 'var(--color-primary-light)',
+            marginBottom: '40px',
+            fontWeight: '500'
         },
         form: {
             width: '100%',

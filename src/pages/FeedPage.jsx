@@ -15,7 +15,6 @@ const FeedPage = () => {
 
     const user = JSON.parse(localStorage.getItem('alzheimer_user') || '{"name":"Utente"}');
 
-    // Dati di esempio
     const mockPosts = [
         {
             id: 'm1',
@@ -37,40 +36,23 @@ const FeedPage = () => {
 
     useEffect(() => {
         fetchPosts();
-
         let channel;
         try {
             channel = supabase
                 .channel('posts')
-                .on('postgres_changes',
-                    { event: '*', schema: 'public', table: 'posts' },
-                    (payload) => {
-                        if (payload.eventType === 'INSERT') {
-                            setPosts(prev => [payload.new, ...prev]);
-                        } else if (payload.eventType === 'UPDATE') {
-                            setPosts(prev => prev.map(p => p.id === payload.new.id ? payload.new : p));
-                        } else if (payload.eventType === 'DELETE') {
-                            setPosts(prev => prev.filter(p => p.id !== payload.old.id));
-                        }
-                    }
-                )
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, (payload) => {
+                    if (payload.eventType === 'INSERT') setPosts(prev => [payload.new, ...prev]);
+                    else if (payload.eventType === 'UPDATE') setPosts(prev => prev.map(p => p.id === payload.new.id ? payload.new : p));
+                    else if (payload.eventType === 'DELETE') setPosts(prev => prev.filter(p => p.id !== payload.old.id));
+                })
                 .subscribe();
-        } catch (e) {
-            console.warn("Supabase Realtime not available");
-        }
-
-        return () => {
-            if (channel) supabase.removeChannel(channel);
-        };
+        } catch (e) {}
+        return () => { if (channel) supabase.removeChannel(channel); };
     }, []);
 
     const fetchPosts = async () => {
         try {
-            const { data, error } = await supabase
-                .from('posts')
-                .select('*')
-                .order('created_at', { ascending: false });
-
+            const { data, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
             if (error || !data || data.length === 0) {
                 setPosts(mockPosts);
                 if (error) setDbWorking(false);
@@ -96,26 +78,12 @@ const FeedPage = () => {
                     let width = img.width;
                     let height = img.height;
                     const max_size = 1024;
-
-                    if (width > height) {
-                        if (width > max_size) {
-                            height *= max_size / width;
-                            width = max_size;
-                        }
-                    } else {
-                        if (height > max_size) {
-                            width *= max_size / height;
-                            height = max_size;
-                        }
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
+                    if (width > height) { if (width > max_size) { height *= max_size / width; width = max_size; } }
+                    else { if (height > max_size) { width *= max_size / height; height = max_size; } }
+                    canvas.width = width; canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    
-                    const resizedBase64 = canvas.toDataURL('image/jpeg', 0.8);
-                    setSelectedImage(resizedBase64);
+                    setSelectedImage(canvas.toDataURL('image/jpeg', 0.8));
                 };
                 img.src = reader.result;
             };
@@ -125,7 +93,6 @@ const FeedPage = () => {
 
     const createPost = async () => {
         if (!newPostText.trim() && !selectedImage) return;
-
         const newPostObj = {
             author: user.name + ' ' + (user.surname || ''),
             text: newPostText,
@@ -133,201 +100,100 @@ const FeedPage = () => {
             created_at: new Date().toISOString(),
             image: selectedImage
         };
-
         setPosts(prev => [newPostObj, ...prev]);
         setNewPostText('');
         setSelectedImage(null);
-
-        try {
-            const { error } = await supabase
-                .from('posts')
-                .insert([newPostObj]);
-            if (error) console.error("Error saving to DB");
-        } catch (e) {
-            console.error("DB Error");
-        }
-    };
-
-    const startEditing = (post) => {
-        setEditingPostId(post.id);
-        setEditingText(post.text);
+        try { await supabase.from('posts').insert([newPostObj]); } catch (e) {}
     };
 
     const saveEdit = async (postId) => {
         if (!editingText.trim()) return;
         setPosts(prev => prev.map(p => p.id === postId ? { ...p, text: editingText } : p));
         setEditingPostId(null);
-        try {
-            await supabase.from('posts').update({ text: editingText }).eq('id', postId);
-        } catch (e) {}
+        try { await supabase.from('posts').update({ text: editingText }).eq('id', postId); } catch (e) {}
     };
 
     const deletePost = async (postId) => {
-        if (!window.confirm("Vuoi davvero eliminare questo post?")) return;
+        if (!window.confirm("Eliminare il post?")) return;
         setPosts(prev => prev.filter(p => p.id !== postId));
-        try {
-            await supabase.from('posts').delete().eq('id', postId);
-        } catch (e) {}
+        try { await supabase.from('posts').delete().eq('id', postId); } catch (e) {}
     };
 
     const styles = {
-        container: {
-            backgroundColor: '#F0F2F5',
-            minHeight: '100%',
-            padding: '12px 0 100px 0',
-        },
-        createPostCard: {
-            backgroundColor: '#fff',
-            margin: '0 12px 16px 12px',
-            borderRadius: '12px',
-            padding: '16px',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-        },
-        avatarSmall: {
-            width: '40px', height: '40px', borderRadius: '50%',
-            backgroundColor: 'var(--color-primary-light)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'white', fontWeight: 'bold', fontSize: '18px', flexShrink: 0
-        },
-        input: {
-            flex: 1, backgroundColor: '#F0F2F5', border: 'none', borderRadius: '20px',
-            padding: '10px 16px', fontSize: '16px', outline: 'none', marginLeft: '12px'
-        },
-        previewContainer: {
-            position: 'relative', margin: '10px 0', borderRadius: '8px', overflow: 'hidden', border: '1px solid #ddd'
-        },
-        previewImage: { width: '100%', maxHeight: '200px', objectFit: 'cover', display: 'block' },
-        postCard: { backgroundColor: '#fff', marginBottom: '12px', padding: '12px 0', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' },
-        postImage: { 
-            width: '100%', maxHeight: '400px', objectFit: 'cover', marginBottom: '12px', 
-            backgroundColor: '#f0f2f5', cursor: 'zoom-in', transition: 'opacity 0.2s'
-        },
-        lightbox: {
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.95)', zIndex: 2000,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '20px'
-        },
-        lightboxImg: { maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px' },
-        closeBtn: {
-            position: 'absolute', top: '20px', right: '20px', color: 'white',
-            background: 'rgba(255,255,255,0.2)', borderRadius: '50%', padding: '10px',
-            border: 'none', cursor: 'pointer'
-        },
-        actionRow: { display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #E4E6EB', paddingTop: '12px' },
-        actionBtn: { display: 'flex', alignItems: 'center', gap: '8px', color: '#65676B', fontWeight: '600', fontSize: '14px', background: 'none', border: 'none', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer' },
+        container: { backgroundColor: 'var(--color-bg-primary)', minHeight: '100%', padding: '12px 0 100px 0' },
+        card: { backgroundColor: '#fff', margin: '0 12px 12px 12px', borderRadius: '16px', padding: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
+        avatar: { width: '44px', height: '44px', borderRadius: '50%', backgroundColor: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' },
+        input: { flex: 1, backgroundColor: '#F3F4F6', border: 'none', borderRadius: '22px', padding: '12px 16px', fontSize: '16px', outline: 'none', marginLeft: '12px' },
+        btnPrimary: { backgroundColor: 'var(--color-primary)', color: 'white', border: 'none', padding: '8px 20px', borderRadius: '20px', fontWeight: 'bold' },
+        postImage: { width: '100%', maxHeight: '450px', objectFit: 'cover', borderRadius: '12px', margin: '8px 0', cursor: 'pointer' },
+        lightbox: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.95)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' },
     };
 
     return (
         <div style={styles.container}>
-            {/* Lightbox Modal */}
             {enlargedImage && (
                 <div style={styles.lightbox} onClick={() => setEnlargedImage(null)}>
-                    <button style={styles.closeBtn} onClick={() => setEnlargedImage(null)}>
-                        <X size={28} />
-                    </button>
-                    <img src={enlargedImage} alt="Enlarged" style={styles.lightboxImg} />
+                    <img src={enlargedImage} alt="Enlarged" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                    <button style={{ position: 'absolute', top: 20, right: 20, color: 'white', background: 'none', border: 'none' }}><X size={32}/></button>
                 </div>
             )}
 
-            {/* Inserimento Post */}
-            <div style={styles.createPostCard}>
+            <div style={styles.card}>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
-                    <div style={styles.avatarSmall}>{user.name[0]}</div>
-                    <input
-                        style={styles.input}
-                        placeholder={`A cosa stai pensando, ${user.name}?`}
-                        value={newPostText}
-                        onChange={(e) => setNewPostText(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && createPost()}
-                    />
+                    <div style={styles.avatar}>{user.name[0]}</div>
+                    <input style={styles.input} placeholder={`A cosa stai pensando?`} value={newPostText} onChange={(e) => setNewPostText(e.target.value)} />
                 </div>
-
                 {selectedImage && (
-                    <div style={styles.previewContainer}>
-                        <img src={selectedImage} alt="Preview" style={styles.previewImage} />
-                        <button 
-                            style={{ position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', borderRadius: '50%', border: 'none', padding: '4px', cursor: 'pointer' }}
-                            onClick={() => setSelectedImage(null)}
-                        >
-                            <X size={18} />
-                        </button>
-                        <div style={{ position: 'absolute', bottom: 8, left: 8, backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' }}>
-                            Immagine ottimizzata ✨
-                        </div>
+                    <div style={{ position: 'relative', margin: '12px 0' }}>
+                        <img src={selectedImage} style={{ width: '100%', borderRadius: '12px' }} />
+                        <button onClick={() => setSelectedImage(null)} style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.5)', color: 'white', borderRadius: '50%', padding: '4px' }}><X size={20}/></button>
                     </div>
                 )}
-
-                <div style={styles.actionRow}>
-                    <input type="file" accept="image/*" style={{ display: 'none' }} ref={fileInputRef} onChange={handleImageChange} />
-                    <button style={styles.actionBtn} onClick={() => fileInputRef.current.click()}>
-                        <ImageIcon color="#45BD62" size={20} /> Foto
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid #eee' }}>
+                    <button style={{ display: 'flex', gap: '8px', color: 'var(--color-primary)', background: 'none' }} onClick={() => fileInputRef.current.click()}>
+                        <ImageIcon size={20}/> <span style={{ fontWeight: '600' }}>Foto</span>
                     </button>
-                    <button 
-                        style={{ ...styles.actionBtn, color: 'white', backgroundColor: (newPostText.trim() || selectedImage) ? 'var(--color-primary)' : '#ccc', padding: '6px 20px', borderRadius: '20px' }}
-                        onClick={createPost}
-                        disabled={!newPostText.trim() && !selectedImage}
-                    >
-                        Pubblica
-                    </button>
+                    <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleImageChange} />
+                    <button style={{ ...styles.btnPrimary, opacity: (newPostText || selectedImage) ? 1 : 0.5 }} onClick={createPost}>Pubblica</button>
                 </div>
             </div>
 
-            {/* Feed */}
-            {loading ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-primary)' }}>Caricamento...</div>
-            ) : (
-                posts.map((post, index) => (
-                    <div key={post.id || index} style={styles.postCard}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 16px', marginBottom: '12px' }}>
-                            <div style={{ display: 'flex', gap: '12px' }}>
-                                <div style={styles.avatarSmall}>{post.author?.[0] || 'U'}</div>
-                                <div>
-                                    <div style={{ fontWeight: '700' }}>{post.author}</div>
-                                    <div style={{ fontSize: '12px', color: '#65676B' }}>{new Date(post.created_at).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                <button style={{ background: 'none', border: 'none', color: '#65676B', cursor: 'pointer' }} onClick={() => startEditing(post)}><Edit2 size={18}/></button>
-                                <button style={{ background: 'none', border: 'none', color: '#FF3B30', cursor: 'pointer' }} onClick={() => deletePost(post.id)}><Trash2 size={18}/></button>
+            {posts.map((post, i) => (
+                <div key={post.id || i} style={styles.card}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <div style={styles.avatar}>{post.author?.[0]}</div>
+                            <div>
+                                <div style={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>{post.author}</div>
+                                <div style={{ fontSize: '12px', color: '#888' }}>{new Date(post.created_at).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
                             </div>
                         </div>
-
-                        {editingPostId === post.id ? (
-                            <div style={{ padding: '0 16px 12px' }}>
-                                <textarea style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-primary)' }} value={editingText} onChange={(e) => setEditingText(e.target.value)} />
-                                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                                    <button style={{ backgroundColor: 'var(--color-primary)', color: 'white', border: 'none', padding: '6px 16px', borderRadius: '8px' }} onClick={() => saveEdit(post.id)}>Salva</button>
-                                    <button style={{ background: '#eee', border: 'none', padding: '6px 16px', borderRadius: '8px' }} onClick={() => setEditingPostId(null)}>Annulla</button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div style={{ padding: '0 16px', fontSize: '17px', marginBottom: '12px' }}>{post.text}</div>
-                        )}
-
-                        {post.image && (
-                            <div style={{ position: 'relative' }}>
-                                <img 
-                                    src={post.image} 
-                                    alt="Post" 
-                                    style={styles.postImage} 
-                                    onClick={() => setEnlargedImage(post.image)}
-                                    onMouseOver={(e) => e.target.style.opacity = '0.9'}
-                                    onMouseOut={(e) => e.target.style.opacity = '1'}
-                                />
-                                <div style={{ position: 'absolute', bottom: '20px', right: '20px', backgroundColor: 'rgba(0,0,0,0.5)', color: 'white', padding: '6px', borderRadius: '50%', pointerEvents: 'none' }}>
-                                    <Maximize2 size={16} />
-                                </div>
-                            </div>
-                        )}
-
-                        <div style={{ display: 'flex', borderTop: '1px solid #E4E6EB', margin: '0 16px', paddingTop: '4px' }}>
-                            <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', color: '#65676B', fontWeight: '600', background: 'none', border: 'none' }}><ThumbsUp size={20} /> Mi piace</button>
-                            <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', color: '#65676B', fontWeight: '600', background: 'none', border: 'none' }}><MessageSquare size={20} /> Commenta</button>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button style={{ color: '#888', background: 'none' }} onClick={() => { setEditingPostId(post.id); setEditingText(post.text); }}><Edit2 size={18}/></button>
+                            <button style={{ color: 'var(--color-error)', background: 'none' }} onClick={() => deletePost(post.id)}><Trash2 size={18}/></button>
                         </div>
                     </div>
-                ))
-            )}
+
+                    {editingPostId === post.id ? (
+                        <div>
+                            <textarea style={{ width: '100%', padding: '10px', borderRadius: '12px', border: '1px solid var(--color-primary)' }} value={editingText} onChange={(e) => setEditingText(e.target.value)} />
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                                <button style={styles.btnPrimary} onClick={() => saveEdit(post.id)}>Salva</button>
+                                <button style={{ background: '#eee', padding: '8px 16px', borderRadius: '20px' }} onClick={() => setEditingPostId(null)}>Annulla</button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div style={{ fontSize: '17px', color: 'var(--color-text-primary)' }}>{post.text}</div>
+                    )}
+
+                    {post.image && <img src={post.image} style={styles.postImage} onClick={() => setEnlargedImage(post.image)} />}
+
+                    <div style={{ display: 'flex', gap: '20px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #eee' }}>
+                        <button style={{ display: 'flex', gap: '6px', color: 'var(--color-primary)', background: 'none', fontWeight: '600' }}><ThumbsUp size={20}/> Mi piace</button>
+                        <button style={{ display: 'flex', gap: '6px', color: 'var(--color-text-secondary)', background: 'none', fontWeight: '600' }}><MessageSquare size={20}/> Commenta</button>
+                    </div>
+                </div>
+            ))}
         </div>
     );
 };
