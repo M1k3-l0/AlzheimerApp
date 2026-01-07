@@ -1,20 +1,19 @@
 :root {
-  /* Airalzh Brand Colors (Official) */
-  --color-primary: #4A304F;      /* Prugna scuro ufficiale */
-  --color-primary-light: #8B6D91; /* Viola medio */
-  --color-accent: #FDB913;       /* Giallo Oro Airalzh */
+  /* Airalzh Brand Colors (Official Image Sync) */
+  --color-primary: #9C69A7;       /* Viola vibrante logo "Ai" */
+  --color-primary-dark: #4A304F;  /* Prugna scuro "ralzh" e footer */
+  --color-accent: #FDB913;        /* Oro Airalzh */
   
-  --color-bg-primary: #F7F3FA;    /* Sfondo lilla chiarissimo */
-  --color-bg-secondary: #ffffff;  /* Bianco per le card */
-  --color-bg-white: #ffffff;
-
-  --color-text-primary: #2D1F30;  /* Testo prugna quasi nero */
+  --color-bg-primary: #F7F3FA;    /* Sfondo lilla chiarissimo sezione Dona */
+  --color-bg-secondary: #ffffff;  /* Bianco puro per card */
+  
+  --color-text-primary: #4A304F;  /* Testo prugna scuro ufficiale */
   --color-text-secondary: #6B7280;
   
   --color-success: #34C759;
   --color-error: #FF3B30;
   --color-border: #E5E7EB;
-  --color-action: #4A304F;       /* Tasti attivi in prugna */
+  --theme-vibrant: #9C69A7;
 
   /* Spacing & Sizes */
   --tab-bar-height: 84px;

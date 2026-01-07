@@ -25,8 +25,9 @@ const ListItem = ({ text, isCompleted, onToggle }) => {
         },
         text: {
             fontSize: '18px',
-            color: isCompleted ? 'var(--color-text-secondary)' : 'var(--color-text-primary)',
+            color: isCompleted ? 'var(--color-text-secondary)' : 'var(--color-primary-dark)',
             textDecoration: isCompleted ? 'line-through' : 'none',
+            fontWeight: isCompleted ? '400' : '600'
         }
     };
 

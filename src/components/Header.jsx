@@ -19,8 +19,8 @@ const Header = ({ title }) => {
         },
         title: {
             fontSize: '22px',
-            color: 'var(--color-text-primary)',
-            fontWeight: 'bold'
+            color: 'var(--color-primary-dark)',
+            fontWeight: '800'
         },
         settingsBtn: {
             position: 'absolute',

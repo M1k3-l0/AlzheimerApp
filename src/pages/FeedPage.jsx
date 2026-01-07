@@ -23,14 +23,6 @@ const FeedPage = () => {
             created_at: new Date(Date.now() - 3600000).toISOString(),
             likes: 12,
             image: null
-        },
-        {
-            id: 'm2',
-            author: 'Giovanni Bianchi',
-            text: 'Qualcuno sa quando sarà la prossima festa in centro? Mi piacerebbe molto andare.',
-            created_at: new Date(Date.now() - 7200000).toISOString(),
-            likes: 5,
-            image: null
         }
     ];
 
@@ -75,14 +67,11 @@ const FeedPage = () => {
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    const max_size = 1024;
+                    let width = img.width; let height = img.height; const max_size = 1024;
                     if (width > height) { if (width > max_size) { height *= max_size / width; width = max_size; } }
                     else { if (height > max_size) { width *= max_size / height; height = max_size; } }
                     canvas.width = width; canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
+                    const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
                     setSelectedImage(canvas.toDataURL('image/jpeg', 0.8));
                 };
                 img.src = reader.result;
@@ -93,16 +82,9 @@ const FeedPage = () => {
 
     const createPost = async () => {
         if (!newPostText.trim() && !selectedImage) return;
-        const newPostObj = {
-            author: user.name + ' ' + (user.surname || ''),
-            text: newPostText,
-            likes: 0,
-            created_at: new Date().toISOString(),
-            image: selectedImage
-        };
+        const newPostObj = { author: user.name + ' ' + (user.surname || ''), text: newPostText, likes: 0, created_at: new Date().toISOString(), image: selectedImage };
         setPosts(prev => [newPostObj, ...prev]);
-        setNewPostText('');
-        setSelectedImage(null);
+        setNewPostText(''); setSelectedImage(null);
         try { await supabase.from('posts').insert([newPostObj]); } catch (e) {}
     };
 
@@ -127,6 +109,7 @@ const FeedPage = () => {
         btnPrimary: { backgroundColor: 'var(--color-primary)', color: 'white', border: 'none', padding: '8px 20px', borderRadius: '20px', fontWeight: 'bold' },
         postImage: { width: '100%', maxHeight: '450px', objectFit: 'cover', borderRadius: '12px', margin: '8px 0', cursor: 'pointer' },
         lightbox: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.95)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+        iconBtn: { background: 'none', border: 'none', color: 'var(--color-primary-dark)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }
     };
 
     return (
@@ -162,9 +145,9 @@ const FeedPage = () => {
                 <div key={post.id || i} style={styles.card}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                         <div style={{ display: 'flex', gap: '12px' }}>
-                            <div style={styles.avatar}>{post.author?.[0]}</div>
+                            <div style={{ ...styles.avatar, backgroundColor: 'var(--color-primary-dark)' }}>{post.author?.[0]}</div>
                             <div>
-                                <div style={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>{post.author}</div>
+                                <div style={{ fontWeight: 'bold', color: 'var(--color-primary-dark)' }}>{post.author}</div>
                                 <div style={{ fontSize: '12px', color: '#888' }}>{new Date(post.created_at).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
                             </div>
                         </div>
@@ -189,8 +172,8 @@ const FeedPage = () => {
                     {post.image && <img src={post.image} style={styles.postImage} onClick={() => setEnlargedImage(post.image)} />}
 
                     <div style={{ display: 'flex', gap: '20px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #eee' }}>
-                        <button style={{ display: 'flex', gap: '6px', color: 'var(--color-primary)', background: 'none', fontWeight: '600' }}><ThumbsUp size={20}/> Mi piace</button>
-                        <button style={{ display: 'flex', gap: '6px', color: 'var(--color-text-secondary)', background: 'none', fontWeight: '600' }}><MessageSquare size={20}/> Commenta</button>
+                        <button style={styles.iconBtn}><ThumbsUp size={20}/> Mi piace</button>
+                        <button style={{ ...styles.iconBtn, color: 'var(--color-text-secondary)' }}><MessageSquare size={20}/> Commenta</button>
                     </div>
                 </div>
             ))}

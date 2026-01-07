@@ -92,9 +92,9 @@ const LoginPage = () => {
         },
         subtitle: {
             fontSize: '18px',
-            color: 'var(--color-primary-light)',
+            color: 'var(--color-primary)',
             marginBottom: '40px',
-            fontWeight: '500'
+            fontWeight: '600'
         },
         form: {
             width: '100%',
