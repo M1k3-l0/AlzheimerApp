@@ -1,4 +1,4 @@
-# Alzheimer App 🧠
+# Memora 🧠
 
 Un'applicazione mobile premium progettata per supportare i pazienti affetti da Alzheimer e i loro caregiver, offrendo strumenti intuitivi per la gestione quotidiana, la memoria e la socialità.
 

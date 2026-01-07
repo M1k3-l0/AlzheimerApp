@@ -125,8 +125,9 @@ const LoginPage = () => {
 
     return (
         <div style={styles.container}>
+            <img src="/logo.png" alt="Memora Logo" style={{ width: '100px', height: '100px', marginBottom: '16px', borderRadius: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
             <h1 style={styles.title}>Ciao!</h1>
-            <p style={styles.subtitle}>Chi sei?</p>
+            <p style={styles.subtitle}>Benvenuto su Memora</p>
 
             <label style={styles.photoContainer}>
                 <div style={styles.photoPlaceholder}>

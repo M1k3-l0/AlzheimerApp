@@ -10,7 +10,7 @@ const Layout = () => {
         switch (path) {
             case '/': return 'Le mie Attività';
             case '/chat': return 'Messaggi';
-            case '/feed': return 'AlzheimerBook';
+            case '/feed': return 'MemoraBook';
             case '/impostazioni': return 'Impostazioni';
             default: return 'App';
         }

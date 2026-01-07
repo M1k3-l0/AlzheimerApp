@@ -139,7 +139,7 @@ const SettingsPage = () => {
       </button>
 
       <div style={{ textAlign: "center", marginTop: "40px", color: "#888", fontSize: "12px" }}>
-        AlzheimerApp x Airalzh &copy; 2026
+        Memora x Airalzh &copy; 2026
       </div>
     </div>
   );
