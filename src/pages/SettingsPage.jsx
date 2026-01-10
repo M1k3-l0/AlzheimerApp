@@ -29,6 +29,26 @@ const SettingsPage = () => {
   const [tempSos, setTempSos] = useState(sosNumber);
 
   const requestNotificationPermission = async () => {
+    // 1. Prova via OneSignal (se presente)
+    if (window.OneSignal) {
+      try {
+        const isPushSupported = window.OneSignal.Notifications.isPushSupported();
+        if (isPushSupported) {
+          await window.OneSignal.Notifications.requestPermission();
+          const permission = window.OneSignal.Notifications.permission;
+          setNotifications(permission === true || permission === "granted");
+          if (permission) {
+             // Opzionale: associa l'utente OneSignal al nome locale
+             window.OneSignal.login(user.name + " " + (user.surname || ""));
+          }
+          return;
+        }
+      } catch (e) {
+        console.error("Errore OneSignal:", e);
+      }
+    }
+
+    // 2. Fallback Browser Nativo
     if (!("Notification" in window)) {
       alert("Il tuo browser non supporta le notifiche.");
       return;
@@ -43,6 +63,9 @@ const SettingsPage = () => {
       });
     } else {
       setNotifications(false);
+      if (permission === "denied") {
+        alert("Hai negato i permessi. Per attivarle, vai nelle impostazioni del browser.");
+      }
     }
   };
 
