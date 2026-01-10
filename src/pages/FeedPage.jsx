@@ -64,11 +64,15 @@ const FeedPage = () => {
             // Seleziona i post e conta i commenti associati
             const { data, error } = await supabase
                 .from('posts')
-                .select('*, comments(id, count)')
+                .select('*, comments(count)')
                 .order('created_at', { ascending: false });
             
-            if (!error && data) {
-                // Supabase nested count returns array, we transform it
+            if (error) {
+                console.error("Errore fetch posts:", error);
+                return;
+            }
+
+            if (data) {
                 const formattedPosts = data.map(p => ({
                     ...p,
                     comment_count: p.comments?.[0]?.count || 0
@@ -114,7 +118,11 @@ const FeedPage = () => {
         };
 
         const { error } = await supabase.from('comments').insert([commentObj]);
-        if (!error) {
+        
+        if (error) {
+            console.error("Errore salvataggio commento:", error);
+            alert("Errore nel salvare il commento: " + error.message);
+        } else {
             setNewCommentText('');
         }
     };
@@ -168,8 +176,6 @@ const FeedPage = () => {
             author: user.name + ' ' + (user.surname || ''), 
             author_photo: user.photo, 
             text: newPostText, 
-            likes: 0, 
-            created_at: new Date().toISOString(), 
             image: selectedImage 
         };
         
@@ -177,9 +183,13 @@ const FeedPage = () => {
         setSelectedImage(null);
         
         try { 
-            await supabase.from('posts').insert([newPostObj]); 
+            const { error } = await supabase.from('posts').insert([newPostObj]); 
+            if (error) {
+                console.error("Errore Supabase inserimento post:", error);
+                alert("Errore nel salvataggio: " + error.message);
+            }
         } catch (e) {
-            console.error("Errore creazione post");
+            console.error("Errore catastrofico creazione post:", e);
         }
     };
 
