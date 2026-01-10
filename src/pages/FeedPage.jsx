@@ -15,17 +15,25 @@ const FeedPage = () => {
     const [newCommentText, setNewCommentText] = useState('');
     const fileInputRef = useRef(null);
 
+    const [likedPosts, setLikedPosts] = useState(() => {
+        const saved = localStorage.getItem('alzheimer_liked_posts');
+        return saved ? JSON.parse(saved) : [];
+    });
+
     const user = JSON.parse(localStorage.getItem('alzheimer_user') || '{"name":"Utente"}');
 
     useEffect(() => {
+        localStorage.setItem('alzheimer_liked_posts', JSON.stringify(likedPosts));
+    }, [likedPosts]);
+
+    useEffect(() => {
         fetchPosts();
-        
         // Realtime Posts
         const postsChannel = supabase
             .channel('posts-realtime')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, (payload) => {
-                if (payload.eventType === 'INSERT') setPosts(prev => [payload.new, ...prev]);
-                else if (payload.eventType === 'UPDATE') setPosts(prev => prev.map(p => p.id === payload.new.id ? payload.new : p));
+                if (payload.eventType === 'INSERT') setPosts(prev => [{ ...payload.new, comment_count: 0 }, ...prev]);
+                else if (payload.eventType === 'UPDATE') setPosts(prev => prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p));
                 else if (payload.eventType === 'DELETE') setPosts(prev => prev.filter(p => p.id !== payload.old.id));
             })
             .subscribe();
@@ -35,10 +43,13 @@ const FeedPage = () => {
             .channel('comments-realtime')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
                 const newComment = payload.new;
+                // Aggiorna lista commenti se aperta
                 setComments(prev => ({
                     ...prev,
                     [newComment.post_id]: [...(prev[newComment.post_id] || []), newComment]
                 }));
+                // Incrementa counter globale nel feed
+                setPosts(prev => prev.map(p => p.id === newComment.post_id ? { ...p, comment_count: (p.comment_count || 0) + 1 } : p));
             })
             .subscribe();
 
@@ -50,10 +61,22 @@ const FeedPage = () => {
 
     const fetchPosts = async () => {
         try {
-            const { data, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
-            if (!error && data) setPosts(data);
+            // Seleziona i post e conta i commenti associati
+            const { data, error } = await supabase
+                .from('posts')
+                .select('*, comments(id, count)')
+                .order('created_at', { ascending: false });
+            
+            if (!error && data) {
+                // Supabase nested count returns array, we transform it
+                const formattedPosts = data.map(p => ({
+                    ...p,
+                    comment_count: p.comments?.[0]?.count || 0
+                }));
+                setPosts(formattedPosts);
+            }
         } catch (e) {
-            console.error("Errore fetch posts");
+            console.error("Errore fetch posts", e);
         }
         setLoading(false);
     };
@@ -97,13 +120,24 @@ const FeedPage = () => {
     };
 
     const handleLike = async (postId, currentLikes) => {
+        if (likedPosts.includes(postId)) return; // Evita like multipli dallo stesso utente locale
+
+        // Ottimismo: aggiorna subito UI
+        setPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: (p.likes || 0) + 1 } : p));
+        setLikedPosts(prev => [...prev, postId]);
+
         try {
-            await supabase
+            const { error } = await supabase
                 .from('posts')
                 .update({ likes: (currentLikes || 0) + 1 })
                 .eq('id', postId);
+            
+            if (error) throw error;
         } catch (e) {
-            console.error("Errore nel mettere like");
+            console.error("Errore nel mettere like", e);
+            // Revert in caso di errore
+            setLikedPosts(prev => prev.filter(id => id !== postId));
+            fetchPosts(); 
         }
     };
 
@@ -169,7 +203,8 @@ const FeedPage = () => {
         comment: { display: 'flex', gap: '10px', marginBottom: '10px' },
         commentBubble: { backgroundColor: '#F3F4F6', padding: '8px 12px', borderRadius: '14px', flex: 1 },
         commentAuthor: { fontWeight: '700', fontSize: '13px', color: 'var(--color-primary-dark)' },
-        commentText: { fontSize: '14px', color: '#333' }
+        commentText: { fontSize: '14px', color: '#333' },
+        statsBar: { display: 'flex', justifyContent: 'space-between', padding: '8px 4px', borderBottom: '1px solid #f9f9f9', marginBottom: '8px', fontSize: '13px', color: '#666' }
     };
 
     return (
@@ -222,10 +257,16 @@ const FeedPage = () => {
                     <div style={{ fontSize: '16px', color: '#333', marginBottom: '8px' }}>{post.text}</div>
                     {post.image && <img src={post.image} style={styles.postImage} onClick={() => setEnlargedImage(post.image)} alt="Post" />}
 
-                    <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
+                    {/* Barra Statistiche */}
+                    <div style={styles.statsBar}>
+                        <span>{post.likes || 0} Like</span>
+                        <span onClick={() => toggleComments(post.id)} style={{cursor:'pointer'}}>{post.comment_count || 0} Commenti</span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '20px', marginTop: '4px' }}>
                         <button style={styles.actionBtn} onClick={() => handleLike(post.id, post.likes)}>
-                            <ThumbsUp size={18} fill={post.likes > 0 ? "var(--color-primary)" : "none"} color={post.likes > 0 ? "var(--color-primary)" : "currentColor"}/> 
-                            {post.likes > 0 ? post.likes : ''} Like
+                            <ThumbsUp size={18} fill={likedPosts.includes(post.id) ? "var(--color-primary)" : "none"} color={likedPosts.includes(post.id) ? "var(--color-primary)" : "currentColor"}/> 
+                            Mi piace
                         </button>
                         <button style={styles.actionBtn} onClick={() => toggleComments(post.id)}><MessageSquare size={18}/> Commenta</button>
                     </div>
