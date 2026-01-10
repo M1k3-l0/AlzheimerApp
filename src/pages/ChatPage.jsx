@@ -9,13 +9,17 @@ const ChatPage = () => {
     const messagesEndRef = useRef(null);
 
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+        }, 100);
     };
 
     useEffect(() => {
+        window.addEventListener('resize', scrollToBottom);
         if (!loading) {
             scrollToBottom();
         }
+        return () => window.removeEventListener('resize', scrollToBottom);
     }, [messages, loading]);
 
     // Recupera utente corrente
