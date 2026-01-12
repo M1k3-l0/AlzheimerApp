@@ -234,7 +234,7 @@ const SettingsPage = () => {
 
       <div style={{ textAlign: "center", marginTop: "40px", color: "#888", fontSize: "12px", lineHeight: "1.6" }}>
         Memora x Airalzh &copy; 2026<br />
-        Sviluppato da <strong>Daniele Spalletti</strong> di <a href="https://www.cosmonet.info" target="_blank" style={{color: '#888', textDecoration: 'underline'}}>cosmonet.info</a>
+        Sviluppato da <strong>Daniele Spalletti</strong> e <strong>Michele Mosca</strong> di <a href="https://www.cosmonet.info" target="_blank" style={{color: '#888', textDecoration: 'underline'}}>cosmonet.info</a>
       </div>
     </div>
   );

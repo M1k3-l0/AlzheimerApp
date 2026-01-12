@@ -377,7 +377,7 @@ const LoginPage = () => {
             )}
 
             <div style={{ marginTop: '40px', fontSize: '11px', color: '#999', lineHeight: '1.4' }}>
-                Creato da <strong>Daniele Spalletti</strong><br />
+                Creato da <strong>Daniele Spalletti</strong> e <strong>Michele Mosca</strong><br />
                 di <a href="https://www.cosmonet.info" target="_blank" style={{color: '#999'}}>cosmonet.info</a>
             </div>
         </div>
