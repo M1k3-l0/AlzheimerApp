@@ -22,10 +22,19 @@ const ProfilePage = () => {
         likes: 0,
         comments: 0
     });
+    
+    // Likes Post State
     const [likedPosts, setLikedPosts] = useState(() => {
         const saved = localStorage.getItem('alzheimer_liked_posts');
         return saved ? JSON.parse(saved) : [];
     });
+
+    // Likes Comment State
+    const [likedComments, setLikedComments] = useState(() => {
+        const saved = localStorage.getItem('alzheimer_liked_comments');
+        return saved ? JSON.parse(saved) : [];
+    });
+
     const [enlargedImage, setEnlargedImage] = useState(null);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -60,6 +69,25 @@ const ProfilePage = () => {
                     comment_count: p.comments?.[0]?.count || 0
                 }));
                 setUserPosts(formattedPosts);
+
+                // PRE-FETCH COMMENTS (Ottimizzazione Velocità)
+                const postIds = data.map(p => p.id);
+                if (postIds.length > 0) {
+                    const { data: allComments } = await supabase
+                        .from('comments')
+                        .select('*')
+                        .in('post_id', postIds)
+                        .order('created_at', { ascending: true });
+                    
+                    if (allComments) {
+                        const commentsMap = {};
+                        allComments.forEach(c => {
+                            if (!commentsMap[c.post_id]) commentsMap[c.post_id] = [];
+                            commentsMap[c.post_id].push(c);
+                        });
+                        setComments(commentsMap);
+                    }
+                }
             }
         } catch (e) {
             console.error("Errore fetch user posts:", e);
@@ -159,24 +187,29 @@ const ProfilePage = () => {
         calculateStats();
     };
 
+    // --- Like Logic (Toggle) ---
     const handleLike = async (postId, currentLikes) => {
-        if (likedPosts.includes(postId)) return;
+        const isLiked = likedPosts.includes(postId);
+        const newLikes = isLiked ? (currentLikes - 1) : (currentLikes + 1);
 
-        setUserPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: (p.likes || 0) + 1 } : p));
-        setLikedPosts(prev => [...prev, postId]);
-        localStorage.setItem('alzheimer_liked_posts', JSON.stringify([...likedPosts, postId]));
+        // Update Local State
+        setLikedPosts(prev => {
+            const newVal = isLiked ? prev.filter(id => id !== postId) : [...prev, postId];
+            localStorage.setItem('alzheimer_liked_posts', JSON.stringify(newVal));
+            return newVal;
+        });
+
+        // Optimistic UI Update
+        setUserPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: newLikes } : p));
 
         try {
-            const { error } = await supabase
+            await supabase
                 .from('posts')
-                .update({ likes: (currentLikes || 0) + 1 })
+                .update({ likes: Math.max(0, newLikes) })
                 .eq('id', postId);
-            
-            if (error) throw error;
         } catch (e) {
-            console.error("Errore nel mettere like", e);
-            setLikedPosts(prev => prev.filter(id => id !== postId));
-            fetchUserPosts();
+            console.error("Errore like:", e);
+            fetchUserPosts(); // Revert on error
         }
     };
 
@@ -197,14 +230,7 @@ const ProfilePage = () => {
             setShowCommentsFor(null);
         } else {
             setShowCommentsFor(postId);
-            if (!comments[postId]) {
-                const { data } = await supabase
-                    .from('comments')
-                    .select('*')
-                    .eq('post_id', postId)
-                    .order('created_at', { ascending: true });
-                if (data) setComments(prev => ({ ...prev, [postId]: data }));
-            }
+            // I commenti sono già pre-aricati! Nessun fetch delay qui.
         }
     };
 
@@ -215,7 +241,8 @@ const ProfilePage = () => {
             post_id: postId,
             author_name: user.name + ' ' + (user.surname || ''),
             author_photo: user.photo,
-            text: newCommentText
+            text: newCommentText,
+            likes: 0
         };
 
         const { data, error } = await supabase.from('comments').insert([commentObj]).select();
@@ -230,6 +257,36 @@ const ProfilePage = () => {
             }));
             setNewCommentText('');
             setUserPosts(prev => prev.map(p => p.id === postId ? { ...p, comment_count: (p.comment_count || 0) + 1 } : p));
+        }
+    };
+
+    // --- Like Comment Logic (Toggle) ---
+    const handleCommentLike = async (commentId, currentLikes, postId) => {
+        const isLiked = likedComments.includes(commentId);
+        const safeLikes = currentLikes || 0; // Gestisce null/undefined
+        const newLikes = isLiked ? (safeLikes - 1) : (safeLikes + 1);
+
+        // Update Local State for tracking user likes
+        setLikedComments(prev => {
+            const newVal = isLiked ? prev.filter(id => id !== commentId) : [...prev, commentId];
+            localStorage.setItem('alzheimer_liked_comments', JSON.stringify(newVal));
+            return newVal;
+        });
+
+        // Update UI (Optimistic)
+        setComments(prev => {
+            const postComments = prev[postId] || [];
+            const updatedComments = postComments.map(c => 
+                c.id === commentId ? { ...c, likes: Math.max(0, newLikes) } : c
+            );
+            return { ...prev, [postId]: updatedComments };
+        });
+
+        // Update DB
+        try {
+            await supabase.from('comments').update({ likes: Math.max(0, newLikes) }).eq('id', commentId);
+        } catch (e) {
+            console.error("Errore like commento:", e);
         }
     };
 
@@ -295,7 +352,9 @@ const ProfilePage = () => {
         commentBubble: { backgroundColor: 'white', padding: '8px 12px', borderRadius: '18px', flex: 1, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' },
         commentAuthor: { fontWeight: '700', fontSize: '13px', color: '#050505' },
         commentText: { fontSize: '14px', color: '#050505', lineHeight: '1.4' },
-        commentInputContainer: { display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px' },
+        commentActions: { marginLeft: '50px', display: 'flex', gap: '12px', fontSize: '12px', color: '#65676B', fontWeight: '600' },
+        commentLikeBtn: { cursor: 'pointer', border: 'none', background: 'none', padding: 0, fontWeight: '600', fontSize: '12px' },
+        commentInputContainer: { display: 'flex', gap: '8px', alignItems: 'center', marginTop: '16px' },
         commentInput: { flex: 1, borderRadius: '20px', border: '1px solid #CCD0D5', padding: '8px 12px', fontSize: '14px', outline: 'none' },
         
         modal: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' },
@@ -442,13 +501,37 @@ const ProfilePage = () => {
                                     {showCommentsFor === post.id && (
                                         <div style={styles.commentSection}>
                                             {(comments[post.id] || []).map(comm => (
-                                                <div key={comm.id} style={styles.comment}>
-                                                    <div style={styles.avatarSmall}>
-                                                        {comm.author_photo ? <img src={comm.author_photo} style={styles.avatarImg} /> : null}
+                                                <div key={comm.id} style={{marginBottom:'12px'}}>
+                                                    <div style={styles.comment}>
+                                                        <div style={styles.avatarSmall}>
+                                                            {comm.author_photo ? <img src={comm.author_photo} style={styles.avatarImg} /> : null}
+                                                        </div>
+                                                        <div style={styles.commentBubble}>
+                                                            <div style={styles.commentAuthor}>{comm.author_name}</div>
+                                                            <div style={styles.commentText}>{comm.text}</div>
+                                                        </div>
                                                     </div>
-                                                    <div style={styles.commentBubble}>
-                                                        <div style={styles.commentAuthor}>{comm.author_name}</div>
-                                                        <div style={styles.commentText}>{comm.text}</div>
+                                                    {/* Comment Interactions */}
+                                                    <div style={styles.commentActions}>
+                                                        <button 
+                                                            style={{
+                                                                ...styles.commentLikeBtn, 
+                                                                color: likedComments.includes(comm.id) ? '#1877F2' : '#65676B'
+                                                            }}
+                                                            onClick={() => handleCommentLike(comm.id, comm.likes, post.id)}
+                                                        >
+                                                            Mi piace
+                                                        </button>
+                                                        {comm.likes > 0 && (
+                                                            <div style={{display:'flex', alignItems:'center', gap:'4px', color:'#65676B'}}>
+                                                                <div style={{backgroundColor:'#1877F2', borderRadius:'50%', width:'14px', height:'14px', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                                                                     <ThumbsUp size={8} color="white" fill="white"/>
+                                                                </div>
+                                                                {comm.likes}
+                                                            </div>
+                                                        )}
+                                                        <span>Rispondi</span>
+                                                        <span>{new Date(comm.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                                                     </div>
                                                 </div>
                                             ))}
