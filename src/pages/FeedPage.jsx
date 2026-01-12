@@ -253,7 +253,7 @@ const FeedPage = () => {
         comment: { display: 'flex', gap: '10px', marginBottom: '10px' },
         commentBubble: { backgroundColor: '#F3F4F6', padding: '8px 12px', borderRadius: '14px', flex: 1 },
         commentAuthor: { fontWeight: '700', fontSize: '13px', color: 'var(--color-primary-dark)' },
-        commentText: { fontSize: '14px', color: '#333' },
+        commentText: { fontSize: '14px', color: '#333', textAlign: 'left' },
         statsBar: { display: 'flex', justifyContent: 'space-between', padding: '8px 4px', borderBottom: '1px solid #f9f9f9', marginBottom: '8px', fontSize: '13px', color: '#666' }
     };
 
@@ -304,7 +304,7 @@ const FeedPage = () => {
                         <button style={{ background: 'none', border: 'none', color: '#ccc' }} onClick={() => deletePost(post.id)}><Trash2 size={16}/></button>
                     </div>
 
-                    <div style={{ fontSize: '16px', color: '#333', marginBottom: '8px' }}>{post.text}</div>
+                    <div style={{ fontSize: '16px', color: '#333', marginBottom: '8px', textAlign: 'left' }}>{post.text}</div>
                     {post.image && <img src={post.image} style={styles.postImage} onClick={() => setEnlargedImage(post.image)} alt="Post" />}
 
                     {/* Barra Statistiche */}

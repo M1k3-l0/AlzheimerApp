@@ -312,7 +312,7 @@ const ProfilePage = () => {
         postHeader: { padding: '0 16px', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' },
         postAuthorInfo: { display: 'flex', gap: '10px' },
         postAvatar: { width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#eee', overflow: 'hidden' },
-        postContent: { fontSize: '15px', color: '#050505', lineHeight: '1.4', padding: '0 16px', marginBottom: '10px' },
+        postContent: { fontSize: '15px', color: '#050505', lineHeight: '1.4', padding: '0 16px', marginBottom: '10px', textAlign: 'left' },
         postImage: { width: '100%', height: 'auto', display: 'block', marginBottom: '10px' },
         postStats: { display: 'flex', justifyContent: 'space-between', padding: '0 16px 10px 16px', fontSize: '14px', color: '#65676B' },
         postActions: { display: 'flex', borderTop: '1px solid #CED0D4', margin: '0 16px', paddingTop: '4px' },
@@ -322,14 +322,18 @@ const ProfilePage = () => {
         avatarSmall: { width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden', backgroundColor: '#ccc' },
         commentBubble: { backgroundColor: 'white', padding: '8px 12px', borderRadius: '18px', flex: 1, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' },
         commentAuthor: { fontWeight: '700', fontSize: '13px', color: '#050505' },
-        commentText: { fontSize: '14px', color: '#050505', lineHeight: '1.4' },
+        commentText: { fontSize: '14px', color: '#050505', lineHeight: '1.4', textAlign: 'left' },
         commentActions: { marginLeft: '50px', display: 'flex', gap: '12px', fontSize: '12px', color: '#65676B', fontWeight: '600' },
         commentLikeBtn: { cursor: 'pointer', border: 'none', background: 'none', padding: 0, fontWeight: '600', fontSize: '12px' },
         commentInputContainer: { display: 'flex', gap: '8px', alignItems: 'center', marginTop: '16px' },
         commentInput: { flex: 1, borderRadius: '20px', border: '1px solid #CCD0D5', padding: '8px 12px', fontSize: '14px', outline: 'none' },
         modal: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' },
         modalContent: { backgroundColor: 'white', borderRadius: '12px', padding: '20px', maxWidth: '500px', width: '100%', maxHeight: '90vh', overflowY: 'auto' },
-        lightbox: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }
+        lightbox: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 },
+        // Added specifically for left alignment
+        detailRow: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', textAlign: 'left', fontSize: '15px', color: '#050505' },
+        sectionTitle: { fontSize: '20px', fontWeight: '700', color: '#050505', marginBottom: '16px', textAlign: 'left' },
+        detailsBtn: { width: '100%', backgroundColor: '#E4E6EB', color: '#050505', border: 'none', borderRadius: '6px', height: '36px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', marginTop: '8px' }
     };
 
     return (
