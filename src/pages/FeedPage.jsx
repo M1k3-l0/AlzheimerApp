@@ -91,11 +91,38 @@ const FeedPage = () => {
                     comment_count: p.comments?.[0]?.count || 0
                 }));
                 setPosts(formattedPosts);
+                
+                // Pre-fetch tutti i commenti per renderli istantanei
+                fetchAllComments();
             }
         } catch (e) {
             console.error("Errore fetch posts", e);
         }
         setLoading(false);
+    };
+
+    const fetchAllComments = async () => {
+        try {
+            // Carica TUTTI i commenti in una sola query
+            const { data, error } = await supabase
+                .from('comments')
+                .select('*')
+                .order('created_at', { ascending: true });
+            
+            if (!error && data) {
+                // Raggruppa i commenti per post_id
+                const commentsByPost = {};
+                data.forEach(comment => {
+                    if (!commentsByPost[comment.post_id]) {
+                        commentsByPost[comment.post_id] = [];
+                    }
+                    commentsByPost[comment.post_id].push(comment);
+                });
+                setComments(commentsByPost);
+            }
+        } catch (e) {
+            console.error("Errore fetch commenti:", e);
+        }
     };
 
     const fetchComments = async (postId) => {
