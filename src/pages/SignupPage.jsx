@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Mail, Lock, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { User, Mail, Lock, AlertCircle } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 const SignupPage = () => {
@@ -26,7 +26,6 @@ const SignupPage = () => {
 
         try {
             // Registrazione su Supabase Auth
-            // Passiamo nome, cognome e ruolo nei "metadata" così il trigger SQL li salva nel profilo
             const { data, error: signUpError } = await supabase.auth.signUp({
                 email: formData.email,
                 password: formData.password,
@@ -102,8 +101,7 @@ const SignupPage = () => {
             cursor: loading ? 'wait' : 'pointer',
             marginTop: '10px',
             opacity: loading ? 0.7 : 1
-        },
-        backLink: { marginTop: '20px', color: '#666', fontSize: '14px', display:'flex', alignItems:'center', justifyContent:'center', gap:'5px', textDecoration:'none' }
+        }
     };
 
     return (
@@ -142,6 +140,18 @@ const SignupPage = () => {
                         <div style={styles.inputWrapper}>
                             <Mail size={18} style={styles.icon}/>
                             <input name="email" type="email" style={styles.input} placeholder="mario@email.com" required onChange={handleChange} />
+                        </div>
+                    </div>
+
+                    <div style={styles.inputGroup}>
+                        <label style={styles.label}>Ruolo</label>
+                        <div style={styles.inputWrapper}>
+                            <User size={18} style={styles.icon}/>
+                            <select name="role" style={styles.input} value={formData.role} onChange={handleChange} required>
+                                <option value="caregiver">Familiare / Caregiver</option>
+                                <option value="patient">Paziente</option>
+                                <option value="healthcare">Operatore Sanitario</option>
+                            </select>
                         </div>
                     </div>
 

@@ -27,15 +27,32 @@ const LoginPage = () => {
 
             // Recupera il profilo per mantenere la compatibilità con il resto dell'app
             if (data.user) {
-                const { data: profile } = await supabase
+                let { data: profile } = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('id', data.user.id)
                     .single();
 
+                // SELF-HEALING: Se il profilo non esiste (trigger fallito?), crealo ora
+                if (!profile) {
+                    console.log("Profilo mancante, creazione fallback...");
+                    const metadata = data.user.user_metadata || {};
+                    const newProfile = {
+                        id: data.user.id,
+                        email: data.user.email,
+                        name: metadata.name || 'Utente',
+                        surname: metadata.surname || '',
+                        role: metadata.role || 'caregiver',
+                        photo_url: metadata.photo_url || null
+                    };
+                    
+                    const { error: createError } = await supabase.from('profiles').insert([newProfile]);
+                    if (!createError) profile = newProfile;
+                }
+
                 if (profile) {
                     localStorage.setItem('alzheimer_user', JSON.stringify({
-                        id: profile.id, // <--- FONDAMENTALE: Salviamo l'UUID
+                        id: profile.id, 
                         name: profile.name,
                         surname: profile.surname,
                         photo: profile.photo_url,
@@ -51,7 +68,12 @@ const LoginPage = () => {
 
         } catch (err) {
             console.error("Login fallito:", err);
-            setError("Email o password non validi.");
+            // Mostra messaggio errore più specifico
+            let msg = "Email o password non validi."; // Default
+            if (err.message.includes("Email not confirmed")) msg = "Controlla la tua email per confermare l'account.";
+            if (err.message.includes("Invalid login credentials")) msg = "Email o password errati.";
+            
+            setError(msg);
         } finally {
             setLoading(false);
         }
