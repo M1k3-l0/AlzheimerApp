@@ -5,6 +5,7 @@ import ListPage from './pages/ListPage';
 import ChatPage from './pages/ChatPage';
 import FeedPage from './pages/FeedPage';
 import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
 import { Bell, ShieldCheck, X } from 'lucide-react';
@@ -33,6 +34,7 @@ function App() {
         <HashRouter>
             <Routes>
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
 
                 <Route path="/" element={isAuthenticated ? <Layout /> : <Navigate to="/login" replace />}>
                     <Route index element={<ListPage />} />

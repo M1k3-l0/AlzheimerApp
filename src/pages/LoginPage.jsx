@@ -1,76 +1,58 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { UserCircle2, Users, Stethoscope, ChevronRight, ArrowLeft } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Mail, Lock, AlertCircle } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 const LoginPage = () => {
-    const [step, setStep] = useState(1); // 1: Selezione Ruolo, 2: Inserimento Dati
-    const [role, setRole] = useState(null); // 'patient', 'caregiver', 'healthcare'
-    const [name, setName] = useState('');
-    const [surname, setSurname] = useState('');
-    const [photo, setPhoto] = useState(null);
     const navigate = useNavigate();
-
-    const handlePhotoChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPhoto(reader.result);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleRoleSelect = (selectedRole) => {
-        setRole(selectedRole);
-        setStep(2);
-    };
-
-    const handleBack = () => {
-        setStep(1);
-        setRole(null);
-    };
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        if (name.trim() && surname.trim() && role) {
-            const userData = {
-                name: name.trim(),
-                surname: surname.trim(),
-                photo: photo,
-                role: role
-            };
+        setLoading(true);
+        setError(null);
 
-            // Salva localmente
-            localStorage.setItem('alzheimer_user', JSON.stringify(userData));
+        try {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email.trim(),
+                password: password
+            });
 
-            // Salva su Supabase (Sincronizzazione Profili)
-            try {
-                const userId = name.trim() + surname.trim();
-                await supabase.from('profiles').upsert([{ 
-                    id: userId, 
-                    name: name.trim(), 
-                    surname: surname.trim(), 
-                    photo_url: photo,
-                    role: role,
-                    last_online: new Date().toISOString()
-                }]);
-            } catch (err) {
-                console.error("Errore sync profilo DB:", err);
+            if (error) throw error;
+
+            console.log("Login successo:", data);
+
+            // Recupera il profilo per mantenere la compatibilità con il resto dell'app
+            if (data.user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', data.user.id)
+                    .single();
+
+                if (profile) {
+                    localStorage.setItem('alzheimer_user', JSON.stringify({
+                        name: profile.name,
+                        surname: profile.surname,
+                        photo: profile.photo_url,
+                        role: profile.role
+                    }));
+                }
             }
-
+            
+            // Reindirizza alla home
             navigate('/');
-            window.location.reload();
-        }
-    };
+            // Forza ricaricamento eventi storage
+            window.dispatchEvent(new Event('storage'));
 
-    const getRoleLabel = (r) => {
-        switch(r) {
-            case 'patient': return 'Paziente';
-            case 'caregiver': return 'Familiare / Caregiver';
-            case 'healthcare': return 'Operatore Sanitario';
-            default: return '';
+        } catch (err) {
+            console.error("Login fallito:", err);
+            setError("Email o password non validi.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -85,296 +67,105 @@ const LoginPage = () => {
             backgroundColor: 'var(--color-bg-primary)',
             textAlign: 'center'
         },
-        logoImage: {
-            width: '100px', 
-            height: '100px', 
-            marginBottom: '16px', 
-            borderRadius: '24px', 
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-        },
-        title: {
-            fontSize: '28px',
-            fontWeight: '800',
-            marginBottom: '8px',
-            color: 'var(--color-primary)'
-        },
-        subtitle: {
-            fontSize: '16px',
-            color: '#65676B',
-            marginBottom: '32px',
-            fontWeight: '500',
-            maxWidth: '280px',
-            lineHeight: '1.4'
-        },
-        // Role Selection Styles
-        roleGrid: {
-            display: 'grid',
-            gridTemplateColumns: '1fr',
-            gap: '12px',
-            width: '100%',
-            maxWidth: '320px'
-        },
-        roleCard: {
+        card: {
             backgroundColor: 'white',
-            borderRadius: '16px',
-            padding: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            cursor: 'pointer',
-            border: '2px solid transparent',
-            transition: 'all 0.2s ease',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-            textAlign: 'left'
-        },
-        roleIconBox: {
-            width: '48px',
-            height: '48px',
-            borderRadius: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'var(--color-bg-primary)',
-            color: 'var(--color-primary)'
-        },
-        roleText: {
-            flex: 1
-        },
-        roleTitle: {
-            fontSize: '17px',
-            fontWeight: '700',
-            color: '#050505',
-            marginBottom: '4px'
-        },
-        roleDesc: {
-            fontSize: '13px',
-            color: '#65676B'
-        },
-        // Form Styles
-        formContainer: {
+            borderRadius: '24px',
+            padding: '40px 30px',
             width: '100%',
-            maxWidth: '300px',
-            animation: 'fadeIn 0.3s ease'
+            maxWidth: '400px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+            border: '1px solid var(--color-border)'
         },
-        backButton: {
-            position: 'absolute',
-            top: '20px',
-            left: '20px',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: '#65676B',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            fontSize: '15px',
-            fontWeight: '600'
-        },
-        photoContainer: {
-            marginBottom: '20px',
-            position: 'relative',
-            cursor: 'pointer',
-            width: '120px',
-            height: '120px',
-            margin: '0 auto 24px auto'
-        },
-        photoPlaceholder: {
-            width: '100%',
-            height: '100%',
-            borderRadius: '50%',
-            backgroundColor: '#F0F2F5',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '4px solid white',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            overflow: 'hidden'
-        },
-        photoImage: {
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover'
-        },
-        addPhotoLabel: {
-            position: 'absolute',
-            bottom: '0',
-            right: '0',
-            backgroundColor: 'white',
-            color: 'var(--color-primary)',
-            borderRadius: '50%',
-            width: '32px',
-            height: '32px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '20px',
-            border: '2px solid var(--color-primary)',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-        },
-        hiddenInput: {
-            display: 'none'
-        },
-        form: {
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px'
-        },
+        logoImage: { width: '80px', height: '80px', marginBottom: '20px', borderRadius: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' },
+        title: { fontSize: '26px', fontWeight: '800', marginBottom: '8px', color: 'var(--color-primary)' },
+        subtitle: { fontSize: '15px', color: '#666', marginBottom: '32px' },
+        form: { display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' },
+        inputGroup: { marginBottom: '5px' },
+        label: { display: 'block', fontSize: '13px', fontWeight: '600', color: '#444', marginBottom: '6px', marginLeft: '4px' },
+        inputWrapper: { position: 'relative', display: 'flex', alignItems: 'center' },
+        icon: { position: 'absolute', left: '14px', color: '#999' },
         input: {
-            padding: '16px',
-            fontSize: '17px',
+            width: '100%',
+            padding: '14px 14px 14px 44px',
             borderRadius: '12px',
             border: '1px solid #ddd',
-            textAlign: 'center',
+            fontSize: '16px',
             outline: 'none',
-            width: '100%',
-            backgroundColor: 'white'
+            backgroundColor: '#f9f9f9',
+            transition: 'border-color 0.2s'
         },
         button: {
             padding: '16px',
             fontSize: '17px',
             fontWeight: 'bold',
-            backgroundColor: photo && name && surname ? 'var(--color-primary)' : '#E4E6EB',
-            color: photo && name && surname ? 'white' : '#BCC0C4',
+            backgroundColor: 'var(--color-primary)',
+            color: 'white',
             border: 'none',
             borderRadius: '12px',
-            cursor: photo && name && surname ? 'pointer' : 'not-allowed',
+            cursor: loading ? 'wait' : 'pointer',
             marginTop: '10px',
             transition: 'background-color 0.2s ease',
-            width: '100%'
+            width: '100%',
+            opacity: loading ? 0.7 : 1
         },
-        selectedRoleBadge: {
-            backgroundColor: 'rgba(156, 105, 167, 0.1)',
-            color: 'var(--color-primary)',
-            padding: '6px 12px',
-            borderRadius: '20px',
-            fontSize: '14px',
-            fontWeight: '600',
-            marginBottom: '16px',
-            display: 'inline-block'
+        errorBox: {
+            backgroundColor: '#FFF0F0', color: '#D32F2F', padding: '12px', borderRadius: '8px', 
+            fontSize: '14px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px'
         }
     };
 
     return (
         <div style={styles.container}>
-            {step === 2 && (
-                <button style={styles.backButton} onClick={handleBack}>
-                    <ArrowLeft size={20} /> Indietro
-                </button>
-            )}
+            <div style={styles.card}>
+                <img src="/logo.png" alt="Memora Logo" style={styles.logoImage} />
+                <h1 style={styles.title}>Bentornato</h1>
+                <p style={styles.subtitle}>Inserisci le tue credenziali per accedere</p>
 
-            <img src="/logo.png" alt="Memora Logo" style={styles.logoImage} />
-            
-            <h1 style={styles.title}>
-                {step === 1 ? 'Chi userà Memora?' : 'Benvenuto!'}
-            </h1>
-            
-            <p style={styles.subtitle}>
-                {step === 1 
-                    ? 'Seleziona il tuo ruolo per personalizzare l\'esperienza' 
-                    : 'Completa il tuo profilo per iniziare'
-                }
-            </p>
+                {error && <div style={styles.errorBox}><AlertCircle size={18}/> {error}</div>}
 
-            {step === 1 ? (
-                <div style={styles.roleGrid}>
-                    <div 
-                        style={styles.roleCard} 
-                        onClick={() => handleRoleSelect('patient')}
-                        onMouseEnter={(e) => e.currentTarget.style.border = '2px solid var(--color-primary)'}
-                        onMouseLeave={(e) => e.currentTarget.style.border = '2px solid transparent'}
-                    >
-                        <div style={styles.roleIconBox}>
-                            <UserCircle2 size={24} />
+                <form style={styles.form} onSubmit={handleLogin}>
+                    <div style={styles.inputGroup}>
+                        <label style={styles.label}>Email</label>
+                        <div style={styles.inputWrapper}>
+                            <Mail size={18} style={styles.icon}/>
+                            <input 
+                                style={styles.input} 
+                                type="email" 
+                                placeholder="nome@email.com" 
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required 
+                            />
                         </div>
-                        <div style={styles.roleText}>
-                            <div style={styles.roleTitle}>Paziente</div>
-                            <div style={styles.roleDesc}>Voglio usare l'app per me stesso</div>
-                        </div>
-                        <ChevronRight size={20} color="#ccc" />
                     </div>
 
-                    <div 
-                        style={styles.roleCard}
-                        onClick={() => handleRoleSelect('caregiver')}
-                        onMouseEnter={(e) => e.currentTarget.style.border = '2px solid var(--color-primary)'}
-                        onMouseLeave={(e) => e.currentTarget.style.border = '2px solid transparent'}
-                    >
-                        <div style={styles.roleIconBox}>
-                            <Users size={24} />
+                    <div style={styles.inputGroup}>
+                        <label style={styles.label}>Password</label>
+                        <div style={styles.inputWrapper}>
+                            <Lock size={18} style={styles.icon}/>
+                            <input 
+                                style={styles.input} 
+                                type="password" 
+                                placeholder="La tua password sicura" 
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required 
+                            />
                         </div>
-                        <div style={styles.roleText}>
-                            <div style={styles.roleTitle}>Familiare / Caregiver</div>
-                            <div style={styles.roleDesc}>Assisto un mio caro</div>
-                        </div>
-                        <ChevronRight size={20} color="#ccc" />
                     </div>
 
-                    <div 
-                        style={styles.roleCard}
-                        onClick={() => handleRoleSelect('healthcare')}
-                        onMouseEnter={(e) => e.currentTarget.style.border = '2px solid var(--color-primary)'}
-                        onMouseLeave={(e) => e.currentTarget.style.border = '2px solid transparent'}
-                    >
-                        <div style={styles.roleIconBox}>
-                            <Stethoscope size={24} />
-                        </div>
-                        <div style={styles.roleText}>
-                            <div style={styles.roleTitle}>Operatore Sanitario</div>
-                            <div style={styles.roleDesc}>Sono un medico o infermiere</div>
-                        </div>
-                        <ChevronRight size={20} color="#ccc" />
-                    </div>
+                    <button type="submit" style={styles.button} disabled={loading}>
+                        {loading ? 'Acceso in corso...' : 'Accedi'}
+                    </button>
+                </form>
+
+                <div style={{marginTop: '25px', fontSize:'14px', color:'#666', borderTop:'1px solid #eee', paddingTop:'20px'}}>
+                    Non hai un account? <br/>
+                    <Link to="/signup" style={{color:'var(--color-primary)', fontWeight:'bold', textDecoration:'none', display:'inline-block', marginTop:'5px'}}>
+                        Crea un nuovo account
+                    </Link>
                 </div>
-            ) : (
-                <div style={styles.formContainer}>
-                    <div style={styles.selectedRoleBadge}>
-                        {getRoleLabel(role)}
-                    </div>
-
-                    <label style={styles.photoContainer}>
-                        <div style={styles.photoPlaceholder}>
-                            {photo ? (
-                                <img src={photo} alt="Profilo" style={styles.photoImage} />
-                            ) : (
-                                <UserCircle2 size={60} color="#ccc" />
-                            )}
-                        </div>
-                        <div style={styles.addPhotoLabel}>+</div>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handlePhotoChange}
-                            style={styles.hiddenInput}
-                        />
-                    </label>
-
-                    <form style={styles.form} onSubmit={handleLogin}>
-                        <input
-                            style={styles.input}
-                            type="text"
-                            placeholder="Il tuo nome"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            required
-                        />
-                        <input
-                            style={styles.input}
-                            type="text"
-                            placeholder="Il tuo cognome"
-                            value={surname}
-                            onChange={(e) => setSurname(e.target.value)}
-                            required
-                        />
-                        <button
-                            type="submit"
-                            style={styles.button}
-                            disabled={!photo || !name || !surname}
-                        >
-                            Accedi a Memora
-                        </button>
-                    </form>
-                </div>
-            )}
+            </div>
 
             <div style={{ marginTop: '40px', fontSize: '11px', color: '#999', lineHeight: '1.4' }}>
                 Creato da <strong>Daniele Spalletti</strong> e <strong>Michele Mosca</strong><br />
