@@ -1,11 +1,12 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import ListPage from './pages/ListPage';
 import ChatPage from './pages/ChatPage';
 import FeedPage from './pages/FeedPage';
 import LoginPage from './pages/LoginPage';
 import SettingsPage from './pages/SettingsPage';
+import ProfilePage from './pages/ProfilePage';
 import { Bell, ShieldCheck, X } from 'lucide-react';
 
 
@@ -29,7 +30,7 @@ function App() {
     }, []);
 
     return (
-        <BrowserRouter>
+        <HashRouter>
             <Routes>
                 <Route path="/login" element={<LoginPage />} />
 
@@ -37,10 +38,11 @@ function App() {
                     <Route index element={<ListPage />} />
                     <Route path="chat" element={<ChatPage />} />
                     <Route path="feed" element={<FeedPage />} />
+                    <Route path="profilo" element={<ProfilePage />} />
                     <Route path="impostazioni" element={<SettingsPage />} />
                 </Route>
             </Routes>
-        </BrowserRouter>
+        </HashRouter>
     );
 }
 
