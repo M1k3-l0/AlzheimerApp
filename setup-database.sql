@@ -1,4 +1,4 @@
--- SQL Script per Setup Database Memora (VERSIONE CORRETTA)
+-- SQL Script per Setup Database Memora (VERSIONE CORRETTA E COMPLETA)
 
 -- 1. Pulizia tabelle esistenti (con CASCADE per i commenti)
 DROP TABLE IF EXISTS comments CASCADE;
@@ -12,7 +12,11 @@ CREATE TABLE profiles (
   name TEXT,
   surname TEXT,
   photo_url TEXT,
-  last_online TIMESTAMPTZ DEFAULT NOW()
+  role TEXT, -- Aggiunto ruolo per supportare le nuove funzionalità
+  bio TEXT,  -- Aggiunto bio
+  location TEXT, -- Aggiunto location
+  last_online TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 3. Tabella Messaggi
@@ -42,7 +46,7 @@ CREATE TABLE comments (
   author_name TEXT NOT NULL,
   author_photo TEXT,
   text TEXT NOT NULL,
-  likes INT DEFAULT 0,
+  likes INT DEFAULT 0, -- Colonna Likes aggiunta
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -58,8 +62,15 @@ CREATE POLICY "Allow All Posts" ON posts FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow All Profiles" ON profiles FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow All Comments" ON comments FOR ALL USING (true) WITH CHECK (true);
 
--- 8. Abilitazione Realtime
--- Esegui queste righe una alla volta se ricevi errore nel 'New Query' editor
+-- Policy specifica aggiuntiva per garantire l'aggiornamento dei Like sui commenti
+CREATE POLICY "Allow Comment Likes Update" ON comments FOR UPDATE USING (true) WITH CHECK (true);
+
+-- 8. Indici per performance
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
+CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id);
+
+-- 9. Abilitazione Realtime
+-- Esegui queste righe una alla volta se ricevi errore nel 'New Query' editor di Supabase
 ALTER PUBLICATION supabase_realtime ADD TABLE messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE posts;
 ALTER PUBLICATION supabase_realtime ADD TABLE comments;
