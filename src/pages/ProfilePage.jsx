@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Edit2, MapPin, Calendar, Heart, MessageSquare, ThumbsUp, X, Check, Image as ImageIcon, Trash2, User, Users, Stethoscope, Plus, MoreHorizontal, Share2 } from 'lucide-react';
+import { Camera, Edit2, MapPin, Calendar, Heart, MessageSquare, ThumbsUp, X, Check, Image as ImageIcon, Trash2, User, Users, Stethoscope, Plus, MoreHorizontal, Share2, Send } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 const ProfilePage = () => {
@@ -28,6 +28,11 @@ const ProfilePage = () => {
     });
     const [enlargedImage, setEnlargedImage] = useState(null);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    // Commenti States
+    const [showCommentsFor, setShowCommentsFor] = useState(null);
+    const [comments, setComments] = useState({});
+    const [newCommentText, setNewCommentText] = useState('');
 
     useEffect(() => {
         fetchUserPosts();
@@ -159,6 +164,7 @@ const ProfilePage = () => {
 
         setUserPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: (p.likes || 0) + 1 } : p));
         setLikedPosts(prev => [...prev, postId]);
+        localStorage.setItem('alzheimer_liked_posts', JSON.stringify([...likedPosts, postId]));
 
         try {
             const { error } = await supabase
@@ -185,31 +191,57 @@ const ProfilePage = () => {
         }
     };
 
-    // --- Button Actions ---
-    const handleAddStory = () => {
-        alert("Funzionalità 'Storia' in arrivo! Presto potrai condividere momenti della tua giornata visibili per 24h.");
+    // --- Comment Logic ---
+    const toggleComments = async (postId) => {
+        if (showCommentsFor === postId) {
+            setShowCommentsFor(null);
+        } else {
+            setShowCommentsFor(postId);
+            if (!comments[postId]) {
+                const { data } = await supabase
+                    .from('comments')
+                    .select('*')
+                    .eq('post_id', postId)
+                    .order('created_at', { ascending: true });
+                if (data) setComments(prev => ({ ...prev, [postId]: data }));
+            }
+        }
     };
 
-    const handleDashboard = () => {
-        // Switch to stats view in modal or alert
-        alert(`Dashboard Personale:\n\nPost totali: ${stats.posts}\nMi piace ricevuti: ${stats.likes}\nCommenti totali: ${stats.comments}\n\nContinua così!`);
+    const addComment = async (postId) => {
+        if (!newCommentText.trim()) return;
+
+        const commentObj = {
+            post_id: postId,
+            author_name: user.name + ' ' + (user.surname || ''),
+            author_photo: user.photo,
+            text: newCommentText
+        };
+
+        const { data, error } = await supabase.from('comments').insert([commentObj]).select();
+
+        if (error) {
+            console.error("Errore salvataggio commento:", error);
+            alert("Errore: " + error.message);
+        } else if (data) {
+            setComments(prev => ({
+                ...prev,
+                [postId]: [...(prev[postId] || []), data[0]]
+            }));
+            setNewCommentText('');
+            setUserPosts(prev => prev.map(p => p.id === postId ? { ...p, comment_count: (p.comment_count || 0) + 1 } : p));
+        }
     };
 
-    const handleOtherOptions = () => {
-        alert("Impostazioni profilo aggiuntive:\n- Impostazioni privacy\n- Registro attività\n- Visualizza come\n- Cerca nel profilo");
-    };
-
+    // --- Placeholders ---
+    const handleAddStory = () => alert("Funzionalità 'Storia' in arrivo!");
+    const handleDashboard = () => alert(`Dashboard:\nPost: ${stats.posts}\nLike: ${stats.likes}`);
+    const handleOtherOptions = () => alert("Opzioni aggiuntive...");
     const handleSeeInfo = () => {
         setActiveTab('info');
-        // Scroll to info section if needed
-        const element = document.getElementById('info-tab-content');
-        if(element) element.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(() => document.getElementById('info-tab-content')?.scrollIntoView({ behavior: 'smooth' }), 100);
     };
-
-    const handleCreatePost = () => {
-        // Redirect to feed or open modal? For now simple alert as placeholder for "Focus input"
-        alert("Per creare un nuovo post, vai alla sezione Social o usa il tasto '+' in basso.");
-    };
+    const handleCreatePost = () => alert("Vai alla sezione Social per creare un post!");
 
     const getRoleLabel = (r) => {
         switch(r) {
@@ -221,261 +253,54 @@ const ProfilePage = () => {
     };
 
     const styles = {
-        container: {
-            backgroundColor: 'white',
-            minHeight: '100%',
-            paddingBottom: '100px',
-            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
-        },
-        coverPhoto: {
-            height: isMobile ? '200px' : '350px',
-            background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)',
-            position: 'relative',
-            overflow: 'hidden'
-        },
-        coverPattern: {
-            position: 'absolute',
-            top: 0, left: 0, right: 0, bottom: 0,
-            backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.1) 0%, transparent 50%)',
-            opacity: 0.5
-        },
-        profileHeader: {
-            maxWidth: '940px',
-            margin: '0 auto',
-            padding: '0 16px',
-            position: 'relative'
-        },
-        profilePictureContainer: {
-            position: 'relative',
-            marginTop: '-90px',
-            marginBottom: '12px',
-            width: 'fit-content'
-        },
-        profilePicture: {
-            width: '168px',
-            height: '168px',
-            borderRadius: '50%',
-            border: '4px solid white',
-            backgroundColor: 'var(--color-primary)',
-            overflow: 'hidden',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '64px',
-            fontWeight: 'bold',
-            color: 'white',
-            cursor: 'pointer',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-        },
-        avatarImg: {
-            width: '100%', height: '100%', objectFit: 'cover'
-        },
-        cameraIcon: {
-            position: 'absolute',
-            bottom: '10px',
-            right: '10px',
-            backgroundColor: '#E4E6EB',
-            borderRadius: '50%',
-            padding: '8px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '2px solid white'
-        },
-        nameSection: {
-            marginBottom: '10px',
-            textAlign: 'left'
-        },
-        name: {
-            fontSize: '28px',
-            fontWeight: '800',
-            color: '#050505',
-            marginBottom: '2px',
-            lineHeight: '1.2'
-        },
-        roleText: {
-            fontSize: '15px',
-            color: '#65676B',
-            fontWeight: '600'
-        },
-        followerStats: {
-            display: 'flex',
-            gap: '12px',
-            fontSize: '15px',
-            color: '#65676B',
-            marginBottom: '20px',
-            fontWeight: '500'
-        },
-        boldStat: {
-            color: '#050505',
-            fontWeight: '700'
-        },
-        actionButtons: {
-            display: 'flex',
-            gap: '8px',
-            marginBottom: '20px'
-        },
-        btnPrimary: {
-            flex: 1,
-            backgroundColor: '#1877F2',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            height: '36px',
-            fontSize: '15px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px'
-        },
-        btnSecondary: {
-            flex: 1,
-            backgroundColor: '#E4E6EB',
-            color: '#050505',
-            border: 'none',
-            borderRadius: '6px',
-            height: '36px',
-            fontSize: '15px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px'
-        },
-        btnIcon: {
-            width: '48px',
-            backgroundColor: '#E4E6EB',
-            color: '#050505',
-            border: 'none',
-            borderRadius: '6px',
-            height: '36px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer'
-        },
-        divider: {
-            height: '1px',
-            backgroundColor: '#CED0D4',
-            margin: '0 -16px 4px -16px'
-        },
-        tabsContainer: {
-            display: 'flex',
-            overflowX: 'auto',
-            gap: '4px',
-            scrollbarWidth: 'none',
-            margin: '0 -16px',
-            padding: '0 8px'
-        },
-        tab: {
-            padding: '12px 16px',
-            fontSize: '15px',
-            fontWeight: '600',
-            color: '#65676B',
-            background: 'none',
-            border: 'none',
-            borderBottom: '3px solid transparent',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap'
-        },
-        tabActive: {
-            color: '#1877F2',
-            borderBottomColor: '#1877F2'
-        },
-        sectionTitle: {
-            fontSize: '20px',
-            fontWeight: '700',
-            color: '#050505',
-            marginBottom: '12px'
-        },
-        detailRow: {
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '12px',
-            marginBottom: '16px',
-            fontSize: '15px',
-            color: '#050505'
-        },
-        detailsBtn: {
-            width: '100%',
-            backgroundColor: '#E7F3FF',
-            color: '#1877F2',
-            border: 'none',
-            borderRadius: '6px',
-            height: '36px',
-            fontSize: '15px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            marginTop: '4px',
-            marginBottom: '16px'
-        },
-        createPostContainer: {
-            padding: '12px 16px',
-            display: 'flex',
-            gap: '12px',
-            alignItems: 'center',
-            borderTop: '8px solid #F0F2F5',
-            borderBottom: '8px solid #F0F2F5',
-            margin: '0 -16px'
-        },
-        createPostInput: {
-            flex: 1,
-            borderRadius: '20px',
-            border: '1px solid #CCD0D5',
-            padding: '8px 16px',
-            fontSize: '15px',
-            color: '#65676B',
-            cursor: 'pointer',
-            backgroundColor: 'white'
-        },
-        postCard: {
-            padding: '12px 0',
-            borderBottom: '8px solid #F0F2F5',
-            margin: '0 -16px' // Full reset needed for padding inside
-        },
-        postHeader: {
-            padding: '0 16px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            marginBottom: '8px'
-        },
-        postAuthorInfo: {
-            display: 'flex',
-            gap: '10px'
-        },
-        postAvatar: {
-            width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#eee', overflow: 'hidden'
-        },
-        postContent: {
-            fontSize: '15px', color: '#050505', lineHeight: '1.4', padding: '0 16px', marginBottom: '10px'
-        },
-        postImage: {
-            width: '100%', height: 'auto', display: 'block', marginBottom: '10px'
-        },
-        postStats: {
-            display: 'flex', justifyContent: 'space-between', padding: '0 16px 10px 16px', fontSize: '14px', color: '#65676B'
-        },
-        postActions: {
-            display: 'flex', borderTop: '1px solid #CED0D4', margin: '0 16px', paddingTop: '4px'
-        },
-        actionBtn: {
-            flex: 1, background: 'none', border: 'none', color: '#65676B', fontWeight: '600', fontSize: '14px', padding: '10px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer'
-        },
-        // Modal Styles reuse
-        modal: {
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px'
-        },
-        modalContent: {
-            backgroundColor: 'white', borderRadius: '12px', padding: '20px', maxWidth: '500px', width: '100%', maxHeight: '90vh', overflowY: 'auto'
-        },
-        // ... (keep necessary layout styles)
-        lightbox: {
-             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000
-        }
+        container: { backgroundColor: 'white', minHeight: '100%', paddingBottom: '100px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' },
+        coverPhoto: { height: isMobile ? '200px' : '350px', background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)', position: 'relative', overflow: 'hidden' },
+        coverPattern: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.1) 0%, transparent 50%)', opacity: 0.5 },
+        profileHeader: { maxWidth: '940px', margin: '0 auto', padding: '0 16px', position: 'relative' },
+        profilePictureContainer: { position: 'relative', marginTop: '-90px', marginBottom: '12px', width: 'fit-content' },
+        profilePicture: { width: '168px', height: '168px', borderRadius: '50%', border: '4px solid white', backgroundColor: 'var(--color-primary)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '64px', fontWeight: 'bold', color: 'white', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
+        avatarImg: { width: '100%', height: '100%', objectFit: 'cover' },
+        cameraIcon: { position: 'absolute', bottom: '10px', right: '10px', backgroundColor: '#E4E6EB', borderRadius: '50%', padding: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' },
+        nameSection: { marginBottom: '10px', textAlign: 'left' },
+        name: { fontSize: '28px', fontWeight: '800', color: '#050505', marginBottom: '2px', lineHeight: '1.2' },
+        roleText: { fontSize: '15px', color: '#65676B', fontWeight: '600' },
+        followerStats: { display: 'flex', gap: '12px', fontSize: '15px', color: '#65676B', marginBottom: '20px', fontWeight: '500' },
+        boldStat: { color: '#050505', fontWeight: '700' },
+        actionButtons: { display: 'flex', gap: '8px', marginBottom: '20px' },
+        btnPrimary: { flex: 1, backgroundColor: '#1877F2', color: 'white', border: 'none', borderRadius: '6px', height: '36px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' },
+        btnSecondary: { flex: 1, backgroundColor: '#E4E6EB', color: '#050505', border: 'none', borderRadius: '6px', height: '36px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' },
+        btnIcon: { width: '48px', backgroundColor: '#E4E6EB', color: '#050505', border: 'none', borderRadius: '6px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
+        divider: { height: '1px', backgroundColor: '#CED0D4', margin: '0 -16px 4px -16px' },
+        tabsContainer: { display: 'flex', overflowX: 'auto', gap: '4px', scrollbarWidth: 'none', margin: '0 -16px', padding: '0 8px' },
+        tab: { padding: '12px 16px', fontSize: '15px', fontWeight: '600', color: '#65676B', background: 'none', border: 'none', borderBottom: '3px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap' },
+        tabActive: { color: '#1877F2', borderBottomColor: '#1877F2' },
+        sectionTitle: { fontSize: '20px', fontWeight: '700', color: '#050505', marginBottom: '12px' },
+        detailRow: { display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '16px', fontSize: '15px', color: '#050505' },
+        detailsBtn: { width: '100%', backgroundColor: '#E7F3FF', color: '#1877F2', border: 'none', borderRadius: '6px', height: '36px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', marginTop: '4px', marginBottom: '16px' },
+        createPostContainer: { padding: '12px 16px', display: 'flex', gap: '12px', alignItems: 'center', borderTop: '8px solid #F0F2F5', borderBottom: '8px solid #F0F2F5', margin: '0 -16px' },
+        createPostInput: { flex: 1, borderRadius: '20px', border: '1px solid #CCD0D5', padding: '8px 16px', fontSize: '15px', color: '#65676B', cursor: 'pointer', backgroundColor: 'white' },
+        postCard: { padding: '12px 0', borderBottom: '8px solid #F0F2F5', margin: '0 -16px' },
+        postHeader: { padding: '0 16px', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' },
+        postAuthorInfo: { display: 'flex', gap: '10px' },
+        postAvatar: { width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#eee', overflow: 'hidden' },
+        postContent: { fontSize: '15px', color: '#050505', lineHeight: '1.4', padding: '0 16px', marginBottom: '10px' },
+        postImage: { width: '100%', height: 'auto', display: 'block', marginBottom: '10px' },
+        postStats: { display: 'flex', justifyContent: 'space-between', padding: '0 16px 10px 16px', fontSize: '14px', color: '#65676B' },
+        postActions: { display: 'flex', borderTop: '1px solid #CED0D4', margin: '0 16px', paddingTop: '4px' },
+        actionBtn: { flex: 1, background: 'none', border: 'none', color: '#65676B', fontWeight: '600', fontSize: '14px', padding: '10px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer' },
+        // Comment Styles
+        commentSection: { backgroundColor: '#F0F2F5', padding: '12px 16px', marginTop: '8px' },
+        comment: { display: 'flex', gap: '8px', marginBottom: '12px' },
+        avatarSmall: { width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden', backgroundColor: '#ccc' },
+        commentBubble: { backgroundColor: 'white', padding: '8px 12px', borderRadius: '18px', flex: 1, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' },
+        commentAuthor: { fontWeight: '700', fontSize: '13px', color: '#050505' },
+        commentText: { fontSize: '14px', color: '#050505', lineHeight: '1.4' },
+        commentInputContainer: { display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px' },
+        commentInput: { flex: 1, borderRadius: '20px', border: '1px solid #CCD0D5', padding: '8px 12px', fontSize: '14px', outline: 'none' },
+        
+        modal: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' },
+        modalContent: { backgroundColor: 'white', borderRadius: '12px', padding: '20px', maxWidth: '500px', width: '100%', maxHeight: '90vh', overflowY: 'auto' },
+        lightbox: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }
     };
 
     return (
@@ -486,13 +311,11 @@ const ProfilePage = () => {
                 </div>
             )}
 
-            {/* Cover Photo */}
             <div style={styles.coverPhoto}>
                 <div style={styles.coverPattern}></div>
             </div>
 
             <div style={styles.profileHeader}>
-                {/* Profile Picture */}
                 <div style={styles.profilePictureContainer}>
                     <div style={styles.profilePicture} onClick={() => setShowEditModal(true)}>
                         {user.photo ? <img src={user.photo} style={styles.avatarImg} alt="Profilo" /> : user.name?.[0]}
@@ -502,20 +325,17 @@ const ProfilePage = () => {
                     </div>
                 </div>
 
-                {/* Name & Bio */}
                 <div style={styles.nameSection}>
                     <h1 style={styles.name}>{user.name} {user.surname}</h1>
                     <div style={styles.roleText}>{user.bio || `Profilo • ${getRoleLabel(user.role)}`}</div>
                 </div>
 
-                {/* Follower Stats */}
                 <div style={styles.followerStats}>
                     <span><span style={styles.boldStat}>{stats.posts * 15 + 42}</span> Follower</span>
                     <span>•</span>
                     <span><span style={styles.boldStat}>{stats.likes * 8 + 15}</span> Seguiti</span>
                 </div>
 
-                {/* Buttons with Functions */}
                 <div style={styles.actionButtons}>
                     <button style={styles.btnPrimary} onClick={handleAddStory}>
                         <Plus size={18} strokeWidth={3} /> Aggiungi storia
@@ -530,7 +350,6 @@ const ProfilePage = () => {
 
                 <div style={styles.divider}></div>
 
-                {/* Tabs */}
                 <div style={styles.tabsContainer}>
                     <button style={{...styles.tab, ...(activeTab === 'post' ? styles.tabActive : {})}} onClick={() => setActiveTab('post')}>Post</button>
                     <button style={{...styles.tab, ...(activeTab === 'info' ? styles.tabActive : {})}} onClick={() => setActiveTab('info')}>Informazioni</button>
@@ -538,12 +357,9 @@ const ProfilePage = () => {
                 </div>
             </div>
 
-            {/* Content Body */}
             <div style={{maxWidth: '940px', margin: '0 auto', padding: '0 16px'}}>
-                
                 {activeTab === 'post' && (
                     <>
-                        {/* Details Block */}
                         <div style={{paddingTop: '16px'}}>
                             <h3 style={styles.sectionTitle}>Dettagli</h3>
                             <div style={styles.detailRow}>
@@ -560,24 +376,17 @@ const ProfilePage = () => {
                                 <Calendar size={20} color="#8C939D" />
                                 <span>Iscritto a {new Date(user.createdAt || Date.now()).toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })}</span>
                             </div>
-                            
-                            <button style={styles.detailsBtn} onClick={handleSeeInfo}>
-                                Vedi le tue informazioni
-                            </button>
+                            <button style={styles.detailsBtn} onClick={handleSeeInfo}>Vedi le tue informazioni</button>
                         </div>
 
-                        {/* Create Post Area */}
                         <div style={styles.createPostContainer}>
                              <div style={{width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#eee', overflow: 'hidden'}}>
                                 {user.photo ? <img src={user.photo} style={styles.avatarImg} /> : null}
                              </div>
-                             <div style={styles.createPostInput} onClick={handleCreatePost}>
-                                 A cosa stai pensando?
-                             </div>
+                             <div style={styles.createPostInput} onClick={handleCreatePost}>A cosa stai pensando?</div>
                              <ImageIcon color="#45BD62" size={24} />
                         </div>
 
-                        {/* Posts List */}
                         <div>
                              <div style={{display:'flex', justifyContent:'space-between', padding:'12px 0 0 0'}}>
                                  <h3 style={styles.sectionTitle}>Post</h3>
@@ -594,7 +403,7 @@ const ProfilePage = () => {
                                             <div>
                                                 <div style={{fontWeight:'600', color:'#050505', fontSize:'15px'}}>{post.author}</div>
                                                 <div style={{fontSize:'13px', color:'#65676B'}}>
-                                                    {new Date(post.created_at).getDate()} {new Date(post.created_at).toLocaleString('default', { month: 'short' })} alle {new Date(post.created_at).getHours()}:{new Date(post.created_at).getMinutes().toString().padStart(2, '0')} · <Users size={12} style={{verticalAlign:'middle'}}/>
+                                                    {new Date(post.created_at).getDate()} {new Date(post.created_at).toLocaleString('default', { month: 'short' })} · <Users size={12} style={{verticalAlign:'middle'}}/>
                                                 </div>
                                             </div>
                                         </div>
@@ -611,20 +420,56 @@ const ProfilePage = () => {
                                             <div style={{background:'#1877F2', borderRadius:'50%', padding:'3px', display:'flex'}}><ThumbsUp size={10} color="white" fill="white"/></div>
                                             <span>{post.likes || 0}</span>
                                         </div>
-                                        <span>{post.comment_count || 0} commenti</span>
+                                        <span onClick={() => toggleComments(post.id)} style={{cursor: 'pointer'}}>{post.comment_count || 0} commenti</span>
                                     </div>
 
                                     <div style={styles.postActions}>
-                                        <button style={styles.actionBtn} onClick={() => handleLike(post.id, post.likes)}>
-                                            <ThumbsUp size={18} color={likedPosts.includes(post.id) ? "#1877F2" : "#65676B"} /> Mi piace
+                                        <button 
+                                            style={{...styles.actionBtn, color: likedPosts.includes(post.id) ? '#1877F2' : '#65676B'}} 
+                                            onClick={() => handleLike(post.id, post.likes)}
+                                        >
+                                            <ThumbsUp size={18} fill={likedPosts.includes(post.id) ? "#1877F2" : "none"} /> Mi piace
                                         </button>
-                                        <button style={styles.actionBtn}>
+                                        <button style={styles.actionBtn} onClick={() => toggleComments(post.id)}>
                                             <MessageSquare size={18} /> Commenta
                                         </button>
                                         <button style={styles.actionBtn}>
                                             <Share2 size={18} /> Condividi
                                         </button>
                                     </div>
+
+                                    {/* Comment Section */}
+                                    {showCommentsFor === post.id && (
+                                        <div style={styles.commentSection}>
+                                            {(comments[post.id] || []).map(comm => (
+                                                <div key={comm.id} style={styles.comment}>
+                                                    <div style={styles.avatarSmall}>
+                                                        {comm.author_photo ? <img src={comm.author_photo} style={styles.avatarImg} /> : null}
+                                                    </div>
+                                                    <div style={styles.commentBubble}>
+                                                        <div style={styles.commentAuthor}>{comm.author_name}</div>
+                                                        <div style={styles.commentText}>{comm.text}</div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            
+                                            <div style={styles.commentInputContainer}>
+                                                <div style={styles.avatarSmall}>
+                                                    {user.photo ? <img src={user.photo} style={styles.avatarImg} /> : null}
+                                                </div>
+                                                <input 
+                                                    style={styles.commentInput} 
+                                                    placeholder="Scrivi un commento..." 
+                                                    value={newCommentText}
+                                                    onChange={(e) => setNewCommentText(e.target.value)}
+                                                    onKeyPress={(e) => e.key === 'Enter' && addComment(post.id)}
+                                                />
+                                                <button style={{border:'none', background:'none', color:'#1877F2'}} onClick={() => addComment(post.id)}>
+                                                    <Send size={20} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                              ))}
                         </div>
@@ -634,7 +479,6 @@ const ProfilePage = () => {
                 {activeTab === 'info' && (
                     <div id="info-tab-content" style={{paddingTop: '20px'}}>
                         <h3 style={styles.sectionTitle}>Informazioni generali</h3>
-                        {/* Info content reused */}
                         <div style={styles.detailRow}><strong>Nome:</strong> {user.name} {user.surname}</div>
                         <div style={styles.detailRow}><strong>Bio:</strong> {user.bio}</div>
                         <div style={styles.detailRow}><strong>Ruolo:</strong> {getRoleLabel(user.role)}</div>
@@ -642,7 +486,6 @@ const ProfilePage = () => {
                 )}
             </div>
 
-            {/* Edit Modal (Preserved Functionality) */}
             {showEditModal && (
                 <div style={styles.modal} onClick={() => setShowEditModal(false)}>
                     <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
@@ -650,13 +493,25 @@ const ProfilePage = () => {
                             <h2 style={{fontSize:'20px', fontWeight:'700'}}>Modifica Profilo</h2>
                             <button style={{background:'none', border:'none', cursor:'pointer'}} onClick={() => setShowEditModal(false)}><X size={24}/></button>
                         </div>
-                        {/* Form fields */}
                         <div style={{marginBottom:'12px'}}>
                             <label style={{display:'block', fontWeight:'600', marginBottom:'4px'}}>Foto Profilo</label>
                             <button style={{color:'#1877F2', background:'none', border:'none', fontWeight:'600', fontSize:'15px', cursor:'pointer'}} onClick={() => fileInputRef.current.click()}>Modifica</button>
                         </div>
                         <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleImageChange} />
                         
+                        <div style={{marginBottom:'16px'}}>
+                             <label style={{display:'block', fontWeight:'600', marginBottom:'4px'}}>Ruolo</label>
+                             <select 
+                                 style={{width:'100%', padding:'10px', borderRadius:'6px', border:'1px solid #ddd', backgroundColor:'white'}}
+                                 value={editForm.role}
+                                 onChange={(e) => setEditForm(prev => ({...prev, role: e.target.value}))}
+                             >
+                                 <option value="patient">Paziente</option>
+                                 <option value="caregiver">Familiare / Caregiver</option>
+                                 <option value="healthcare">Operatore Sanitario</option>
+                             </select>
+                        </div>
+
                         <div style={{marginBottom:'16px'}}>
                             <label style={{display:'block', fontWeight:'600', marginBottom:'4px'}}>Bio</label>
                             <textarea 
@@ -674,20 +529,6 @@ const ProfilePage = () => {
                                 onChange={e => setEditForm({...editForm, location: e.target.value})}
                              />
                         </div>
-
-                        <div style={{marginBottom:'16px'}}>
-                            <label style={{display:'block', fontWeight:'600', marginBottom:'4px'}}>Ruolo</label>
-                            <select 
-                                style={{width:'100%', padding:'10px', borderRadius:'6px', border:'1px solid #ddd', backgroundColor:'white'}}
-                                value={editForm.role}
-                                onChange={(e) => setEditForm(prev => ({...prev, role: e.target.value}))}
-                            >
-                                <option value="patient">Paziente</option>
-                                <option value="caregiver">Familiare / Caregiver</option>
-                                <option value="healthcare">Operatore Sanitario</option>
-                            </select>
-                        </div>
-
                         <button 
                             style={{width:'100%', backgroundColor:'#1877F2', color:'white', border:'none', padding:'12px', borderRadius:'6px', fontWeight:'600', fontSize:'15px', cursor:'pointer'}}
                             onClick={saveProfile}
