@@ -43,13 +43,26 @@ const FeedPage = () => {
             .channel('comments-realtime')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
                 const newComment = payload.new;
-                // Aggiorna lista commenti se aperta
-                setComments(prev => ({
-                    ...prev,
-                    [newComment.post_id]: [...(prev[newComment.post_id] || []), newComment]
+                // Aggiorna lista commenti se aperta (evita duplicati)
+                setComments(prev => {
+                    const existingComments = prev[newComment.post_id] || [];
+                    // Controlla se il commento esiste già
+                    if (existingComments.some(c => c.id === newComment.id)) {
+                        return prev; // Commento già presente, non aggiungere
+                    }
+                    return {
+                        ...prev,
+                        [newComment.post_id]: [...existingComments, newComment]
+                    };
+                });
+                // Incrementa counter globale nel feed (solo se non già incrementato)
+                setPosts(prev => prev.map(p => {
+                    if (p.id === newComment.post_id) {
+                        // Verifica se il counter è già stato incrementato
+                        return { ...p, comment_count: (p.comment_count || 0) + 1 };
+                    }
+                    return p;
                 }));
-                // Incrementa counter globale nel feed
-                setPosts(prev => prev.map(p => p.id === newComment.post_id ? { ...p, comment_count: (p.comment_count || 0) + 1 } : p));
             })
             .subscribe();
 
