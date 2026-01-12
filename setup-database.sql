@@ -42,6 +42,7 @@ CREATE TABLE comments (
   author_name TEXT NOT NULL,
   author_photo TEXT,
   text TEXT NOT NULL,
+  likes INT DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
