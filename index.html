@@ -22,9 +22,38 @@
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Memora</title>
+    <script>
+      window.onerror = function(msg, url, line, col, error) {
+        var div = document.createElement('div');
+        div.style.color = 'red';
+        div.style.position = 'fixed';
+        div.style.top = '0';
+        div.style.left = '0';
+        div.style.backgroundColor = 'white';
+        div.style.zIndex = '99999';
+        div.style.padding = '20px';
+        div.innerHTML = '<h3>Errore Globale:</h3>' + msg + '<br>URL: ' + url + '<br>Linea: ' + line;
+        document.body.appendChild(div);
+      };
+    </script>
   </head>
-  <body>
-    <div id="root"></div>
+    <body style="margin: 0; padding: 0; background-color: white;">
+    <div id="root" style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; color: #9C69A7; font-weight: bold; font-size: 20px; text-align: center; padding: 20px;">
+      CARICAMENTO MEMORA...
+    </div>
+    
+    <script>
+      // Timer di emergenza: se dopo 8 secondi non è apparso nulla, avvisiamo l'utente
+      setTimeout(function() {
+        var root = document.getElementById('root');
+        if (root && root.innerHTML.indexOf('CARICAMENTO') !== -1) {
+          root.innerHTML = '<div style="color:#E67E22;">' +
+            '<h3 style="margin-bottom:10px;">L\'app sta impiegando troppo tempo...</h3>' +
+            '<p style="font-size:14px; color:#666;">Controlla la tua connessione internet o prova a chiudere e riaprire l\'app.</p>' +
+            '</div>';
+        }
+      }, 8000);
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
