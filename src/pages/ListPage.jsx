@@ -285,9 +285,12 @@ const ListPage = () => {
             alignItems: 'center',
             justifyContent: 'center',
             cursor: isPatient ? 'pointer' : 'default',
+            pointerEvents: isPatient ? 'auto' : 'none',
             transition: 'all 0.2s ease',
             opacity: (!isPatient && currentMood !== mood && currentMood !== null) ? 0.4 : 1,
             transform: currentMood === mood ? 'scale(1.05)' : 'scale(1)',
+            userSelect: 'none',
+            WebkitTapHighlightColor: 'transparent',
         }),
         quoteCard: {
             backgroundColor: '#FFFBEB',

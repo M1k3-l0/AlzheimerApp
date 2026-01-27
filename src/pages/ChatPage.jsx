@@ -119,18 +119,12 @@ const ChatPage = () => {
     };
 
     const styles = {
-        // Container principale: forzato a occupare ESATTAMENTE l'altezza visibile
         container: {
-            height: isKeyboardOpen ? `${viewportHeight}px` : `calc(${viewportHeight}px - 60px)`, // Togli 60px se c'è l'header
+            height: '100%',
             display: 'flex',
             flexDirection: 'column',
             backgroundColor: 'var(--color-bg-primary)',
-            position: 'fixed', 
-            top: isKeyboardOpen ? 0 : '60px', // Se tastiera aperta, full screen. Se chiusa, sotto header
-            left: 0,
-            right: 0,
             overflow: 'hidden',
-            zIndex: 900
         },
         messageList: {
             flex: 1,
@@ -139,31 +133,30 @@ const ChatPage = () => {
             display: 'flex',
             flexDirection: 'column',
             gap: '12px',
-            paddingBottom: '20px'
+            paddingBottom: '20px',
+            WebkitOverflowScrolling: 'touch',
         },
         inputArea: {
             flexShrink: 0, 
-            padding: '10px 16px',
+            padding: '12px 16px',
             backgroundColor: 'white',
-            borderTop: '1px solid #eee',
+            borderTop: '1px solid #E5E7EB',
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            // LOGICA CRUCIALE AGGIORNATA: 
-            // - Tastiera APERTA: padding 0 (attaccato)
-            // - Tastiera CHIUSA: padding 80px (60px TabBar + 20px spazio) per non finire sotto i menu
-            paddingBottom: isKeyboardOpen ? '10px' : 'calc(85px + env(safe-area-inset-bottom))',
-            transition: 'padding-bottom 0.2s ease-out' 
+            paddingBottom: '16px',
+            boxShadow: '0 -2px 10px rgba(0,0,0,0.05)',
         },
         input: {
             flex: 1,
             padding: '12px 16px',
             borderRadius: '24px',
-            border: '1px solid #ccc',
+            border: '1px solid #E5E7EB',
             fontSize: '16px',
             outline: 'none',
-            backgroundColor: '#f9f9f9',
-            minHeight: '44px'
+            backgroundColor: '#F9F9FB',
+            minHeight: '44px',
+            transition: 'border-color 0.2s',
         },
         sendButton: {
             width: '44px',
@@ -176,32 +169,56 @@ const ChatPage = () => {
             justifyContent: 'center',
             alignItems: 'center',
             cursor: 'pointer',
-            flexShrink: 0
+            flexShrink: 0,
+            transition: 'transform 0.2s, box-shadow 0.2s',
+            boxShadow: '0 2px 8px rgba(124, 58, 237, 0.3)',
         },
         bubble: (sender) => ({
             maxWidth: '80%',
-            padding: '10px 14px',
-            borderRadius: '16px',
+            padding: '12px 16px',
+            borderRadius: '18px',
             backgroundColor: sender === 'me' ? 'var(--color-primary)' : 'white',
-            color: sender === 'me' ? 'white' : 'black',
+            color: sender === 'me' ? 'white' : '#1F2937',
             alignSelf: sender === 'me' ? 'flex-end' : 'flex-start',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-            borderBottomRightRadius: sender === 'me' ? '4px' : '16px',
-            borderBottomLeftRadius: sender === 'me' ? '16px' : '4px'
-        })
+            boxShadow: sender === 'me' ? '0 2px 8px rgba(124, 58, 237, 0.2)' : '0 2px 8px rgba(0,0,0,0.08)',
+            borderBottomRightRadius: sender === 'me' ? '4px' : '18px',
+            borderBottomLeftRadius: sender === 'me' ? '18px' : '4px',
+        }),
+        emptyState: {
+            textAlign: 'center',
+            color: '#9CA3AF',
+            marginTop: '40%',
+            fontSize: '15px',
+        },
+        senderName: {
+            fontSize: '12px',
+            fontWeight: '700',
+            color: 'var(--color-primary)',
+            marginBottom: '4px',
+        },
+        messageText: {
+            wordBreak: 'break-word',
+            lineHeight: '1.4',
+        },
+        messageTime: {
+            fontSize: '10px',
+            opacity: 0.7,
+            textAlign: 'right',
+            marginTop: '4px',
+        }
     };
 
-    if (loading) return <div style={{display:'flex',justifyContent:'center',padding:'20px'}}>Caricamento...</div>;
+    if (loading) return <div style={{display:'flex',justifyContent:'center',padding:'40px',color:'#9CA3AF'}}>Caricamento messaggi...</div>;
 
     return (
         <div style={styles.container}>
             <div style={styles.messageList}>
-                 {messages.length === 0 && <div style={{textAlign:'center', color:'#999', marginTop:'30%'}}>Nessun messaggio</div>}
+                 {messages.length === 0 && <div style={styles.emptyState}>Nessun messaggio ancora.<br/>Inizia la conversazione!</div>}
                  {messages.map(msg => (
                     <div key={msg.id} style={styles.bubble(msg.sender)}>
-                        {msg.sender === 'other' && <div style={{fontSize:'12px', fontWeight:'700', color:'var(--color-primary)', marginBottom:'2px'}}>{msg.senderName}</div>}
-                        <div style={{wordBreak:'break-word'}}>{msg.text}</div>
-                        <div style={{fontSize:'10px', opacity:0.7, textAlign:'right', marginTop:'2px'}}>{msg.time}</div>
+                        {msg.sender === 'other' && <div style={styles.senderName}>{msg.senderName}</div>}
+                        <div style={styles.messageText}>{msg.text}</div>
+                        <div style={styles.messageTime}>{msg.time}</div>
                     </div>
                  ))}
                  <div ref={messagesEndRef} />
@@ -210,15 +227,25 @@ const ChatPage = () => {
             <div style={styles.inputArea}>
                 <input 
                     style={styles.input}
-                    placeholder="Scrivi..."
+                    placeholder="Scrivi un messaggio..."
                     value={inputText}
                     onChange={e => setInputText(e.target.value)}
                     onKeyPress={e => e.key === 'Enter' && handleSend()}
+                    onFocus={(e) => e.target.style.borderColor = 'var(--color-primary)'}
+                    onBlur={(e) => e.target.style.borderColor = '#E5E7EB'}
                 />
-                <button style={styles.sendButton} onClick={handleSend}><Send size={20}/></button>
+                <button 
+                    style={styles.sendButton} 
+                    onClick={handleSend}
+                    onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
+                    onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                    <Send size={20}/>
+                </button>
             </div>
         </div>
     );
 };
 
 export default ChatPage;
+
