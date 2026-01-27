@@ -42,13 +42,18 @@ body {
   /* Prevent bounce effect on body */
 }
 
-/* Utilities */
+/* Utilities & Layout */
 .app-container {
   display: flex;
   flex-direction: column;
   height: 100dvh;
-  /* Dynamic viewport height */
+  width: 100%;
+  max-width: 600px; /* Desk-top Centering Strategy */
+  margin: 0 auto;
   overflow: hidden;
+  background-color: var(--color-bg-primary);
+  box-shadow: 0 0 50px rgba(0,0,0,0.05); /* Subtle shadow on desktop */
+  position: relative;
 }
 
 .main-content {
@@ -58,6 +63,25 @@ body {
   padding-top: var(--header-height);
   -webkit-overflow-scrolling: touch;
 }
+
+/* Platform detection fallback for fixed backgrounds */
+@media screen and (min-width: 601px) {
+  body {
+    background-color: #f0f0f2; /* Darker background outside the container on desktop */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .app-container {
+    max-width: 100%;
+    box-shadow: none;
+  }
+}
+
 
 h1,
 h2,

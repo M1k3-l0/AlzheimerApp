@@ -128,18 +128,12 @@ const ListPage = () => {
     };
 
     const styles = {
-        containerWrapper: {
-            backgroundColor: '#F9F9FB',
-            minHeight: '100dvh',
-            display: 'flex',
-            justifyContent: 'center',
-        },
         container: {
             padding: '24px',
             width: '100%',
-            maxWidth: '600px', // Centering and responsive on desktop
         },
         header: {
+
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-start',
@@ -311,9 +305,9 @@ const ListPage = () => {
     };
 
     return (
-        <div style={styles.containerWrapper}>
-            <div style={styles.container}>
-                {/* Header / Guest Greeting */}
+        <div style={styles.container}>
+            {/* Header / Guest Greeting */}
+
                 <div style={styles.header}>
                     <div>
                         <div style={styles.greeting}>Ciao, {user.name || 'lol'}!</div>
@@ -439,10 +433,7 @@ const ListPage = () => {
                     </div>
                 </div>
             </div>
-        </div>
     );
 };
 
 export default ListPage;
-
-
