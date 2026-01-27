@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { 
     Bell, 
     Calendar, 
     Plus, 
-    CloudSun, 
     Smile, 
     Meh, 
     Frown, 
     Heart,
     Trash2,
-    CheckCircle2
+    CheckCircle2,
+    Settings
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
@@ -18,6 +19,19 @@ const initialTasks = [
     { id: 2, text: 'Chiudere la porta a chiave', time: '21:00', completed: false },
     { id: 3, text: 'Bere un bicchiere d\'acqua', time: '10:00', completed: true },
     { id: 4, text: 'Chiamare Maria', time: '11:45', completed: false },
+];
+
+const wellnessQuotes = [
+    "Ricorda che ogni piccolo gesto di cura oggi è un seme che fiorirà nel cuore di chi ami.",
+    "Il respiro è il ponte che collega la vita alla coscienza, che unisce il corpo ai tuoi pensieri.",
+    "Non contare i giorni, fai in modo che i giorni contino.",
+    "La gentilezza è la lingua che il sordo può sentire e il cieco può vedere.",
+    "Circondati di persone che ti fanno sentire la versione migliore di te stesso.",
+    "Ogni giorno è una nuova opportunità per fare la differenza, anche se piccola.",
+    "La mente è come un giardino: coltiva pensieri d'amore e raccoglierai bellezza.",
+    "Ascolta il tuo cuore, è lì che risiedono le tue verità più profonde.",
+    "La pazienza è la chiave che apre tutte le porte del benessere interiore.",
+    "Un sorriso è il modo più rapido per cambiare la tua giornata e quella degli altri."
 ];
 
 const ListPage = () => {
@@ -34,6 +48,16 @@ const ListPage = () => {
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const [currentMood, setCurrentMood] = useState(null); // 'happy', 'neutral', 'sad'
     const [loadingMood, setLoadingMood] = useState(true);
+
+    // Get Daily Quote based on the day of the year
+    const dailyQuote = useMemo(() => {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), 0, 0);
+        const diff = now - start;
+        const oneDay = 1000 * 60 * 60 * 24;
+        const dayOfYear = Math.floor(diff / oneDay);
+        return wellnessQuotes[dayOfYear % wellnessQuotes.length];
+    }, []);
 
     // Salva ogni volta che i task cambiano
     useEffect(() => {
@@ -133,7 +157,6 @@ const ListPage = () => {
             width: '100%',
         },
         header: {
-
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-start',
@@ -152,6 +175,16 @@ const ListPage = () => {
             fontSize: '14px',
             marginTop: '4px',
             fontWeight: '600',
+        },
+        settingsLink: {
+            color: '#9CA3AF',
+            padding: '8px',
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
         },
         agendaCard: {
             background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)',
@@ -307,132 +340,134 @@ const ListPage = () => {
     return (
         <div style={styles.container}>
             {/* Header / Guest Greeting */}
-
-                <div style={styles.header}>
-                    <div>
-                        <div style={styles.greeting}>Ciao, {user.name || 'lol'}!</div>
-                        <div style={styles.subHeader}>
-                            <Calendar size={16} />
-                            <span>{new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
-                        </div>
+            <div style={styles.header}>
+                <div>
+                    <div style={styles.greeting}>Ciao, {user.name || 'lol'}!</div>
+                    <div style={styles.subHeader}>
+                        <Calendar size={16} />
+                        <span>{new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
                     </div>
                 </div>
+                <Link to="/impostazioni" style={styles.settingsLink} aria-label="Impostazioni">
+                    <Settings size={20} />
+                </Link>
+            </div>
 
-                {/* Notification Alert */}
-                {!notificationsEnabled && (
-                    <div style={{ margin: '0 0 20px 0', padding: '16px', backgroundColor: '#FFF4E5', border: '1px solid #FFE58F', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <Bell style={{ color: '#E67E22' }} size={24} />
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 'bold', color: '#856404', fontSize: '15px' }}>Avvisi Disattivati</div>
-                        </div>
+            {/* Notification Alert */}
+            {!notificationsEnabled && (
+                <div style={{ margin: '0 0 20px 0', padding: '16px', backgroundColor: '#FFF4E5', border: '1px solid #FFE58F', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <Bell style={{ color: '#E67E22' }} size={24} />
+                    <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 'bold', color: '#856404', fontSize: '15px' }}>Avvisi Disattivati</div>
                     </div>
-                )}
+                </div>
+            )}
 
-                {/* Agenda Card */}
-                <div style={styles.agendaCard}>
-                    <div style={styles.cardTitle}>
-                        <CheckCircle2 size={24} />
-                        <span>Agenda di Oggi</span>
-                    </div>
+            {/* Agenda Card */}
+            <div style={styles.agendaCard}>
+                <div style={styles.cardTitle}>
+                    <CheckCircle2 size={24} />
+                    <span>Agenda di Oggi</span>
+                </div>
 
-                    {tasks.filter(t => !t.completed || showManage).map(task => (
-                        <div 
-                            key={task.id} 
-                            style={styles.taskItem}
-                            onClick={() => toggleTask(task.id)}
-                        >
-                            <div style={styles.taskLeft}>
-                                <div style={styles.taskIcon}>
-                                    {task.completed ? <CheckCircle2 size={18} /> : <Plus size={18} />}
-                                </div>
-                                <span style={{
-                                    ...styles.taskText,
-                                    ...(task.completed ? styles.completedText : {})
-                                }}>
-                                    {task.text}
-                                </span>
-                            </div>
-                            <div style={styles.taskTime}>{task.time || '--:--'}</div>
-                            {showManage && (
-                                <Trash2 
-                                    size={18} 
-                                    color="#fff" 
-                                    style={{ marginLeft: '10px' }} 
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        deleteTask(task.id);
-                                    }} 
-                                />
-                            )}
-                        </div>
-                    ))}
-
+                {tasks.filter(t => !t.completed || showManage).map(task => (
                     <div 
-                        style={styles.manageBtn} 
-                        onClick={() => setShowManage(!showManage)}
+                        key={task.id} 
+                        style={styles.taskItem}
+                        onClick={() => toggleTask(task.id)}
                     >
-                        {showManage ? "Salva Modifiche" : "Gestisci Attività"}
-                    </div>
-                </div>
-
-                {/* Add Task Area */}
-                {showManage && (
-                    <div style={styles.inputArea}>
-                        <h4 style={{ margin: '0 0 10px 0' }}>Nuova Attività</h4>
-                        <input
-                            style={styles.input}
-                            value={newTaskText}
-                            onChange={(e) => setNewTaskText(e.target.value)}
-                            placeholder="Cosa devi fare?"
-                        />
-                        <input
-                            type="time"
-                            style={styles.input}
-                            value={newTaskTime}
-                            onChange={(e) => setNewTaskTime(e.target.value)}
-                        />
-                        <button 
-                            style={{ ...styles.manageBtn, backgroundColor: '#7C3AED', color: 'white', width: '100%', marginTop: '10px' }}
-                            onClick={addTask}
-                        >
-                            Aggiungi
-                        </button>
-                    </div>
-                )}
-
-                {/* Secondary Cards Row */}
-                <div style={styles.secondaryCards}>
-                    {/* Mood Card */}
-                    <div style={styles.whiteCard}>
-                        <span style={{ fontWeight: 'bold', fontSize: '18px' }}>
-                            {isPatient ? "Come ti senti?" : "Stato del Paziente"}
-                        </span>
-                        <div style={styles.moodIconContainer}>
-                            <div style={styles.moodBtn('happy')} onClick={() => handleMoodSelect('happy')}>
-                                <Smile size={36} color={currentMood === 'happy' ? "#7C3AED" : "#F59E0B"} />
+                        <div style={styles.taskLeft}>
+                            <div style={styles.taskIcon}>
+                                {task.completed ? <CheckCircle2 size={18} /> : <Plus size={18} />}
                             </div>
-                            <div style={styles.moodBtn('neutral')} onClick={() => handleMoodSelect('neutral')}>
-                                <Meh size={36} color={currentMood === 'neutral' ? "#7C3AED" : "#9CA3AF"} />
-                            </div>
-                            <div style={styles.moodBtn('sad')} onClick={() => handleMoodSelect('sad')}>
-                                <Frown size={36} color={currentMood === 'sad' ? "#7C3AED" : "#EF4444"} />
-                            </div>
+                            <span style={{
+                                ...styles.taskText,
+                                ...(task.completed ? styles.completedText : {})
+                            }}>
+                                {task.text}
+                            </span>
                         </div>
-                        <span style={{ fontSize: '12px', color: '#6B7280' }}>
-                            {isPatient ? "Tocca l'emozione che provi ora" : "L'ultimo umore registrato dal paziente"}
-                        </span>
+                        <div style={styles.taskTime}>{task.time || '--:--'}</div>
+                        {showManage && (
+                            <Trash2 
+                                size={18} 
+                                color="#fff" 
+                                style={{ marginLeft: '10px' }} 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteTask(task.id);
+                                }} 
+                            />
+                        )}
                     </div>
+                ))}
 
-                    {/* Wisdom Pill Card */}
-                    <div style={styles.quoteCard}>
-                        <span style={styles.quoteLabel}>Pillola di Benessere</span>
-                        <p style={styles.quoteText}>
-                            "Ricorda che ogni piccolo gesto di cura oggi è un seme che fiorirà nel cuore di chi ami."
-                        </p>
-                        <Heart size={80} style={styles.heartBg} />
-                    </div>
+                <div 
+                    style={styles.manageBtn} 
+                    onClick={() => setShowManage(!showManage)}
+                >
+                    {showManage ? "Salva Modifiche" : "Gestisci Attività"}
                 </div>
             </div>
+
+            {/* Add Task Area */}
+            {showManage && (
+                <div style={styles.inputArea}>
+                    <h4 style={{ margin: '0 0 10px 0' }}>Nuova Attività</h4>
+                    <input
+                        style={styles.input}
+                        value={newTaskText}
+                        onChange={(e) => setNewTaskText(e.target.value)}
+                        placeholder="Cosa devi fare?"
+                    />
+                    <input
+                        type="time"
+                        style={styles.input}
+                        value={newTaskTime}
+                        onChange={(e) => setNewTaskTime(e.target.value)}
+                    />
+                    <button 
+                        style={{ ...styles.manageBtn, backgroundColor: '#7C3AED', color: 'white', width: '100%', marginTop: '10px' }}
+                        onClick={addTask}
+                    >
+                        Aggiungi
+                    </button>
+                </div>
+            )}
+
+            {/* Secondary Cards Row */}
+            <div style={styles.secondaryCards}>
+                {/* Mood Card */}
+                <div style={styles.whiteCard}>
+                    <span style={{ fontWeight: 'bold', fontSize: '18px' }}>
+                        {isPatient ? "Come ti senti?" : "Stato del Paziente"}
+                    </span>
+                    <div style={styles.moodIconContainer}>
+                        <div style={styles.moodBtn('happy')} onClick={() => handleMoodSelect('happy')}>
+                            <Smile size={36} color={currentMood === 'happy' ? "#7C3AED" : "#F59E0B"} />
+                        </div>
+                        <div style={styles.moodBtn('neutral')} onClick={() => handleMoodSelect('neutral')}>
+                            <Meh size={36} color={currentMood === 'neutral' ? "#7C3AED" : "#9CA3AF"} />
+                        </div>
+                        <div style={styles.moodBtn('sad')} onClick={() => handleMoodSelect('sad')}>
+                            <Frown size={36} color={currentMood === 'sad' ? "#7C3AED" : "#EF4444"} />
+                        </div>
+                    </div>
+                    <span style={{ fontSize: '12px', color: '#6B7280' }}>
+                        {isPatient ? "Tocca l'emozione che provi ora" : "L'ultimo umore registrato dal paziente"}
+                    </span>
+                </div>
+
+                {/* Wisdom Pill Card */}
+                <div style={styles.quoteCard}>
+                    <span style={styles.quoteLabel}>Pillola di Benessere</span>
+                    <p style={styles.quoteText}>
+                        "{dailyQuote}"
+                    </p>
+                    <Heart size={80} style={styles.heartBg} />
+                </div>
+            </div>
+        </div>
     );
 };
 

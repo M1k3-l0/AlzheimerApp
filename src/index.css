@@ -48,12 +48,12 @@ body {
   flex-direction: column;
   height: 100dvh;
   width: 100%;
-  max-width: 600px; /* Desk-top Centering Strategy */
+  max-width: 600px; /* Mobile/Table feed width */
   margin: 0 auto;
   overflow: hidden;
-  background-color: var(--color-bg-primary);
-  box-shadow: 0 0 50px rgba(0,0,0,0.05); /* Subtle shadow on desktop */
+  background-color: var(--color-bg-secondary);
   position: relative;
+  transition: padding-left 0.3s ease;
 }
 
 .main-content {
@@ -64,14 +64,26 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Platform detection fallback for fixed backgrounds */
+/* PC Layout Support */
 @media screen and (min-width: 601px) {
   body {
-    background-color: #f0f0f2; /* Darker background outside the container on desktop */
+    background-color: #f0f0f2;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
+    padding-left: 80px; /* Offset for Sidebar */
+  }
+  
+  .app-container {
+    box-shadow: 0 0 50px rgba(0,0,0,0.1);
+    height: 95vh; /* Floating style on PC */
+    border-radius: 20px;
+  }
+  
+  .main-content {
+    /* On PC, let's reduce bottom padding as bottom bar is gone */
+    padding-bottom: 40px;
   }
 }
 
@@ -79,8 +91,11 @@ body {
   .app-container {
     max-width: 100%;
     box-shadow: none;
+    height: 100dvh;
+    border-radius: 0;
   }
 }
+
 
 
 h1,
