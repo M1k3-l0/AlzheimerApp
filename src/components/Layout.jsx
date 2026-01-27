@@ -16,10 +16,12 @@ const Layout = () => {
         }
     };
 
+    const isHome = location.pathname === '/';
+
     return (
         <div className="app-container">
-            <Header title={getTitle(location.pathname)} />
-            <main className="main-content">
+            {!isHome && <Header title={getTitle(location.pathname)} />}
+            <main className="main-content" style={{ paddingTop: isHome ? 0 : 'var(--header-height)' }}>
                 <Outlet />
             </main>
             <TabBar />
@@ -28,3 +30,4 @@ const Layout = () => {
 };
 
 export default Layout;
+

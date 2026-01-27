@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { ListTodo, MessageCircle, Users, User } from 'lucide-react';
+import { Home, CheckCircle2, MessageSquare, Users, User } from 'lucide-react';
 import styles from './TabBar.module.css';
 
 const TabBar = () => {
@@ -10,15 +10,15 @@ const TabBar = () => {
                 to="/"
                 className={({ isActive }) => `${styles.tab} ${isActive ? styles.active : ''}`}
             >
-                <ListTodo size={32} />
-                <span className={styles.label}>Attività</span>
+                <Home size={24} />
+                <span className={styles.label}>Inizio</span>
             </NavLink>
 
             <NavLink
                 to="/chat"
                 className={({ isActive }) => `${styles.tab} ${isActive ? styles.active : ''}`}
             >
-                <MessageCircle size={32} />
+                <MessageSquare size={24} />
                 <span className={styles.label}>Chat</span>
             </NavLink>
 
@@ -26,7 +26,7 @@ const TabBar = () => {
                 to="/feed"
                 className={({ isActive }) => `${styles.tab} ${isActive ? styles.active : ''}`}
             >
-                <Users size={32} />
+                <Users size={24} />
                 <span className={styles.label}>Social</span>
             </NavLink>
 
@@ -34,7 +34,7 @@ const TabBar = () => {
                 to="/profilo"
                 className={({ isActive }) => `${styles.tab} ${isActive ? styles.active : ''}`}
             >
-                <User size={32} />
+                <User size={24} />
                 <span className={styles.label}>Profilo</span>
             </NavLink>
         </nav>
@@ -42,3 +42,4 @@ const TabBar = () => {
 };
 
 export default TabBar;
+
