@@ -10,9 +10,10 @@ const FeedPage = () => {
     const [editingPostId, setEditingPostId] = useState(null);
     const [editingText, setEditingText] = useState('');
     const [enlargedImage, setEnlargedImage] = useState(null);
-    const [showCommentsFor, setShowCommentsFor] = useState(null); // ID del post per cui mostrare i commenti
-    const [comments, setComments] = useState({}); // { postId: [comments] }
+    const [showCommentsFor, setShowCommentsFor] = useState(null);
+    const [comments, setComments] = useState({});
     const [newCommentText, setNewCommentText] = useState('');
+    const [userMoods, setUserMoods] = useState({}); // { author_id: mood }
     const fileInputRef = useRef(null);
 
     const [likedPosts, setLikedPosts] = useState(() => {
@@ -21,6 +22,25 @@ const FeedPage = () => {
     });
 
     const user = JSON.parse(localStorage.getItem('alzheimer_user') || '{"name":"Utente"}');
+
+    // Helper functions for mood
+    const getMoodColor = (mood) => {
+        switch (mood) {
+            case 'happy': return '#10B981'; // Green
+            case 'neutral': return '#F59E0B'; // Yellow/Amber
+            case 'sad': return '#EF4444'; // Red
+            default: return '#E5E7EB'; // Gray default
+        }
+    };
+
+    const getMoodEmoji = (mood) => {
+        switch (mood) {
+            case 'happy': return '😊';
+            case 'neutral': return '😐';
+            case 'sad': return '😢';
+            default: return '';
+        }
+    };
 
     useEffect(() => {
         localStorage.setItem('alzheimer_liked_posts', JSON.stringify(likedPosts));
@@ -43,22 +63,18 @@ const FeedPage = () => {
             .channel('comments-realtime')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
                 const newComment = payload.new;
-                // Aggiorna lista commenti se aperta (evita duplicati)
                 setComments(prev => {
                     const existingComments = prev[newComment.post_id] || [];
-                    // Controlla se il commento esiste già
                     if (existingComments.some(c => c.id === newComment.id)) {
-                        return prev; // Commento già presente, non aggiungere
+                        return prev;
                     }
                     return {
                         ...prev,
                         [newComment.post_id]: [...existingComments, newComment]
                     };
                 });
-                // Incrementa counter globale nel feed (solo se non già incrementato)
                 setPosts(prev => prev.map(p => {
                     if (p.id === newComment.post_id) {
-                        // Verifica se il counter è già stato incrementato
                         return { ...p, comment_count: (p.comment_count || 0) + 1 };
                     }
                     return p;
@@ -72,9 +88,28 @@ const FeedPage = () => {
         };
     }, []);
 
+    const fetchUserMoods = async (authorIds) => {
+        if (!authorIds || authorIds.length === 0) return;
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('id, current_mood')
+                .in('id', authorIds);
+            
+            if (!error && data) {
+                const moodsMap = {};
+                data.forEach(profile => {
+                    moodsMap[profile.id] = profile.current_mood;
+                });
+                setUserMoods(moodsMap);
+            }
+        } catch (e) {
+            console.error("Error fetching user moods:", e);
+        }
+    };
+
     const fetchPosts = async () => {
         try {
-            // Seleziona i post e conta i commenti associati
             const { data, error } = await supabase
                 .from('posts')
                 .select('*, comments(count)')
@@ -92,7 +127,10 @@ const FeedPage = () => {
                 }));
                 setPosts(formattedPosts);
                 
-                // Pre-fetch tutti i commenti per renderli istantanei
+                // Fetch moods for all unique authors
+                const authorIds = [...new Set(data.map(p => p.author_id).filter(Boolean))];
+                fetchUserMoods(authorIds);
+                
                 fetchAllComments();
             }
         } catch (e) {
@@ -212,8 +250,10 @@ const FeedPage = () => {
 
     const createPost = async () => {
         if (!newPostText.trim() && !selectedImage) return;
+        const currentUserId = user.id || (user.name + (user.surname || ''));
         const newPostObj = { 
             author: user.name + ' ' + (user.surname || ''), 
+            author_id: currentUserId,
             author_photo: user.photo, 
             text: newPostText, 
             image: selectedImage 
@@ -242,8 +282,37 @@ const FeedPage = () => {
         container: { backgroundColor: 'var(--color-bg-primary)', minHeight: '100%', padding: '0 0 100px 0' },
         stickyHeader: { position: 'sticky', top: 0, zIndex: 100, backgroundColor: 'var(--color-bg-primary)', padding: '12px 0 1px 0' },
         card: { backgroundColor: '#fff', margin: '0 12px 12px 12px', borderRadius: '16px', padding: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
-        avatar: { width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', overflow: 'hidden' },
-        avatarSmall: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', overflow: 'hidden', fontSize: '12px' },
+        avatar: (mood) => ({ 
+            width: '40px', 
+            height: '40px', 
+            borderRadius: '50%', 
+            backgroundColor: 'var(--color-primary)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            color: 'white', 
+            fontWeight: 'bold', 
+            overflow: 'hidden',
+            border: `3px solid ${getMoodColor(mood)}`,
+            boxShadow: `0 2px 8px ${getMoodColor(mood)}40`,
+            transition: 'all 0.3s ease',
+        }),
+        avatarSmall: (mood) => ({ 
+            width: '32px', 
+            height: '32px', 
+            borderRadius: '50%', 
+            backgroundColor: 'var(--color-primary)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            color: 'white', 
+            fontWeight: 'bold', 
+            overflow: 'hidden', 
+            fontSize: '12px',
+            border: `2px solid ${getMoodColor(mood)}`,
+            boxShadow: `0 2px 6px ${getMoodColor(mood)}40`,
+            transition: 'all 0.3s ease',
+        }),
         avatarImg: { width: '100%', height: '100%', objectFit: 'cover' },
         input: { flex: 1, backgroundColor: '#F3F4F6', border: 'none', borderRadius: '22px', padding: '10px 16px', fontSize: '15px', outline: 'none' },
         btnPrimary: { backgroundColor: 'var(--color-primary)', color: 'white', border: 'none', padding: '8px 20px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer' },
@@ -269,7 +338,7 @@ const FeedPage = () => {
             <div style={styles.stickyHeader}>
                 <div style={styles.card}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                        <div style={styles.avatar}>
+                        <div style={styles.avatar(userMoods[user.id || (user.name + (user.surname || ''))])}>
                             {user.photo ? <img src={user.photo} style={styles.avatarImg} alt="Profilo" /> : user.name[0]}
                         </div>
                         <input style={styles.input} placeholder={`A che pensi, ${user.name}?`} value={newPostText} onChange={(e) => setNewPostText(e.target.value)} />
@@ -289,15 +358,20 @@ const FeedPage = () => {
             </div>
 
             {/* Ciclo Post */}
-            {posts.map(post => (
+            {posts.map(post => {
+                const authorMood = userMoods[post.author_id];
+                return (
                 <div key={post.id} style={styles.card}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                         <div style={{ display: 'flex', gap: '10px' }}>
-                            <div style={styles.avatar}>
+                            <div style={styles.avatar(authorMood)}>
                                 {post.author_photo ? <img src={post.author_photo} style={styles.avatarImg} alt="Autore" /> : (post.author?.[0] || 'U')}
                             </div>
                             <div>
-                                <div style={{ fontWeight: '700', color: 'var(--color-primary-dark)' }}>{post.author}</div>
+                                <div style={{ fontWeight: '700', color: 'var(--color-primary-dark)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    {post.author}
+                                    {authorMood && <span style={{ fontSize: '18px' }}>{getMoodEmoji(authorMood)}</span>}
+                                </div>
                                 <div style={{ fontSize: '11px', color: '#999' }}>{new Date(post.created_at).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
                             </div>
                         </div>
@@ -352,7 +426,8 @@ const FeedPage = () => {
                         </div>
                     )}
                 </div>
-            ))}
+                );
+            })}
         </div>
     );
 };
