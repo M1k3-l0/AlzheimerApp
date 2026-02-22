@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { 
     Bell, 
     Calendar, 
@@ -37,6 +38,7 @@ const wellnessQuotes = [
 const ListPage = () => {
     const user = JSON.parse(localStorage.getItem('alzheimer_user') || '{}');
     const isPatient = user.role === 'patient';
+    const reduceMotion = useReducedMotion();
     
     const [tasks, setTasks] = useState(() => {
         const saved = localStorage.getItem('alzheimer_tasks');
@@ -373,9 +375,15 @@ const ListPage = () => {
                     <span>Agenda di Oggi</span>
                 </div>
 
-                {tasks.filter(t => !t.completed || showManage).map(task => (
-                    <div 
+                <AnimatePresence mode="popLayout">
+                {tasks.filter(t => !t.completed || showManage).map((task, i) => (
+                    <motion.div 
                         key={task.id} 
+                        layout={!reduceMotion}
+                        initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={reduceMotion ? false : { opacity: 0, scale: 0.95 }}
+                        transition={{ duration: reduceMotion ? 0 : 0.2, delay: reduceMotion ? 0 : i * 0.03 }}
                         style={styles.taskItem}
                         onClick={() => toggleTask(task.id)}
                     >
@@ -402,8 +410,9 @@ const ListPage = () => {
                                 }} 
                             />
                         )}
-                    </div>
+                    </motion.div>
                 ))}
+                </AnimatePresence>
 
                 <div 
                     style={styles.manageBtn} 
@@ -414,8 +423,15 @@ const ListPage = () => {
             </div>
 
             {/* Add Task Area */}
+            <AnimatePresence>
             {showManage && (
-                <div style={styles.inputArea}>
+                <motion.div
+                    initial={reduceMotion ? false : { opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={reduceMotion ? false : { opacity: 0 }}
+                    transition={{ duration: reduceMotion ? 0 : 0.2 }}
+                    style={styles.inputArea}
+                >
                     <h4 style={{ margin: '0 0 10px 0' }}>Nuova Attività</h4>
                     <input
                         style={styles.input}
@@ -435,13 +451,19 @@ const ListPage = () => {
                     >
                         Aggiungi
                     </button>
-                </div>
+                </motion.div>
             )}
+            </AnimatePresence>
 
             {/* Secondary Cards Row */}
             <div style={styles.secondaryCards}>
                 {/* Mood Card */}
-                <div style={styles.whiteCard}>
+                <motion.div 
+                    style={styles.whiteCard}
+                    initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: reduceMotion ? 0 : 0.3, delay: reduceMotion ? 0 : 0.1 }}
+                >
                     <span style={{ fontWeight: 'bold', fontSize: '18px' }}>
                         {isPatient ? "Come ti senti?" : "Stato del Paziente"}
                     </span>
@@ -459,16 +481,21 @@ const ListPage = () => {
                     <span style={{ fontSize: '12px', color: '#6B7280' }}>
                         {isPatient ? "Tocca l'emozione che provi ora" : "L'ultimo umore registrato dal paziente"}
                     </span>
-                </div>
+                </motion.div>
 
                 {/* Wisdom Pill Card */}
-                <div style={styles.quoteCard}>
+                <motion.div 
+                    style={styles.quoteCard}
+                    initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: reduceMotion ? 0 : 0.3, delay: reduceMotion ? 0 : 0.15 }}
+                >
                     <span style={styles.quoteLabel}>Pillola di Benessere</span>
                     <p style={styles.quoteText}>
                         "{dailyQuote}"
                     </p>
                     <Heart size={80} style={styles.heartBg} />
-                </div>
+                </motion.div>
             </div>
         </div>
     );
