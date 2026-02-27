@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, Smile, Meh, Frown, Calendar } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
+import AppIcon from '../components/AppIcon';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from 'recharts';
 import { getMoodHistory, getMoodColor } from '../utils/moodHistory';
 
@@ -123,13 +124,13 @@ export default function ReportUmorePage() {
           {lastEntry ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {lastEntry.mood === 'happy' && <Smile size={32} color={getMoodColor('happy')} />}
-                {lastEntry.mood === 'neutral' && <Meh size={32} color={getMoodColor('neutral')} />}
-                {lastEntry.mood === 'sad' && <Frown size={32} color={getMoodColor('sad')} />}
+                {lastEntry.mood === 'happy' && <AppIcon name="grin" size={32} color={getMoodColor('happy')} />}
+                {lastEntry.mood === 'neutral' && <AppIcon name="face-expressionless" size={32} color={getMoodColor('neutral')} />}
+                {lastEntry.mood === 'sad' && <AppIcon name="sad" size={32} color={getMoodColor('sad')} />}
                 <span style={{ fontWeight: '600', fontSize: '18px' }}>{MOOD_LABELS[lastEntry.mood]}</span>
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-text-secondary)', fontSize: '15px' }}>
-                <Calendar size={18} />
+                <AppIcon name="calendar-lines" size={18} color="primary" />
                 {lastDate.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })} alle {lastDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>

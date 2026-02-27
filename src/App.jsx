@@ -9,8 +9,6 @@ import SignupPage from './pages/SignupPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
 import ReportUmorePage from './pages/ReportUmorePage';
-import { Bell, ShieldCheck, X } from 'lucide-react';
-
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = React.useState(!!localStorage.getItem('alzheimer_user'));

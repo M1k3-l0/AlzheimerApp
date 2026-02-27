@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
+import AppIcon from '../components/AppIcon';
 
 const ChatPage = () => {
     const [messages, setMessages] = useState([]);
@@ -130,7 +131,7 @@ const ChatPage = () => {
         },
         chatInner: {
             width: '100%',
-            maxWidth: 1000,
+            maxWidth: 'var(--page-max-width)',
             marginLeft: 'auto',
             marginRight: 'auto',
             flex: 1,
@@ -144,8 +145,10 @@ const ChatPage = () => {
             minWidth: 0,
             overflowX: 'hidden',
             overflowY: 'auto',
-            padding: '12px 0',
+            paddingTop: '24px',
             paddingBottom: 'var(--section-gap)',
+            paddingLeft: 0,
+            paddingRight: 0,
             display: 'flex',
             flexDirection: 'column',
             gap: '12px',
@@ -260,8 +263,8 @@ const ChatPage = () => {
                         onChange={e => setInputText(e.target.value)}
                         onKeyPress={e => e.key === 'Enter' && handleSend()}
                     />
-                    <button type="button" className="send-button-circle" onClick={handleSend}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    <button type="button" className="send-button-circle" onClick={handleSend} aria-label="Invia">
+                        <AppIcon name="paper-plane" size={22} color="white" />
                     </button>
                 </div>
             </div>

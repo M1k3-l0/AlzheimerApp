@@ -2,16 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   LogOut,
-  User,
   ChevronLeft,
-  Bell,
-  Type,
-  ShieldAlert,
-  HelpCircle,
   ChevronRight,
-  Phone,
-  Camera
 } from "lucide-react";
+import AppIcon from "../components/AppIcon";
 import { supabase } from "../supabaseClient";
 
 const SettingsPage = () => {
@@ -136,6 +130,7 @@ const SettingsPage = () => {
       const updated = { ...user, photo: photoUrl };
       setUser(updated);
       localStorage.setItem("alzheimer_user", JSON.stringify(updated));
+      window.dispatchEvent(new Event("storage"));
     } catch (err) {
       console.error("Errore upload foto:", err);
       alert('Impossibile caricare la foto. Verifica che il bucket "avatars" esista in Supabase con accesso pubblico.');
@@ -176,24 +171,24 @@ const SettingsPage = () => {
         <input type="file" ref={fileInputRef} accept="image/*" onChange={handlePhotoChange} hidden />
         <button type="button" style={styles.avatarWrap} onClick={() => fileInputRef.current?.click()} disabled={uploadingPhoto} aria-label="Cambia foto profilo">
           <div style={styles.avatar}>
-            {user.photo ? <img src={user.photo} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="Profilo" /> : <User size={30} />}
+            {user.photo ? <img src={user.photo} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="Profilo" /> : <AppIcon name="user" size={30} color="white" />}
           </div>
           <span style={styles.avatarOverlay}>
-            <Camera size={14} />
+            <AppIcon name="camera" size={14} color="white" />
             {uploadingPhoto ? "..." : "Cambia"}
           </span>
         </button>
         <div>
-          <h2 style={{ fontSize: "18px", margin: 0, fontWeight: '700', color: 'var(--color-primary-dark)' }}>{user.name} {user.surname}</h2>
-          <p style={{ color: "var(--color-primary)", margin: 0, fontSize: "14px", fontWeight: '500' }}>Account Caregiver</p>
-        </div>
+            <h2 style={{ fontSize: "18px", margin: 0, fontWeight: '700', color: 'var(--color-primary-dark)' }}>{user.name} {user.surname}</h2>
+            <p style={{ color: "var(--color-primary)", margin: 0, fontSize: "14px", fontWeight: '500' }}>Account Caregiver</p>
+          </div>
       </div>
 
       <h3 style={styles.sectionLabel}>Personalizzazione</h3>
       <div style={styles.menuCard}>
         <button style={styles.menuItem} onClick={requestNotificationPermission}>
           <div style={{ display: "flex", alignItems: "center" }}>
-            <div style={styles.iconWrapper("var(--color-primary)")}><Bell size={18} /></div>
+            <div style={styles.iconWrapper("var(--color-primary)")}><AppIcon name={notifications ? 'bell' : 'bell-slash'} size={18} color="white" /></div>
             <div>
               <span style={styles.itemLabel}>Notifiche Push</span>
               <div style={{fontSize: '12px', color: '#888'}}>{notifications ? 'Attivate' : 'Clicca per attivare'}</div>
@@ -204,7 +199,7 @@ const SettingsPage = () => {
 
         <button style={{ ...styles.menuItem, borderBottom: "none" }} onClick={() => setIsLargeFont(!isLargeFont)}>
           <div style={{ display: "flex", alignItems: "center" }}>
-            <div style={styles.iconWrapper("var(--color-primary-dark)")}><Type size={18} /></div>
+            <div style={styles.iconWrapper("var(--color-primary-dark)")}><AppIcon name="text" size={18} color="white" /></div>
             <span style={styles.itemLabel}>Caratteri Grandi</span>
           </div>
           <div style={{...styles.switch(isLargeFont), backgroundColor: isLargeFont ? 'var(--color-success)' : '#ddd'}}><div style={{width: 27, height: 27, background: 'white', borderRadius: '50%', position: 'absolute', top: 2, left: isLargeFont ? 22 : 2, transition: '0.3s'}}/></div>
@@ -214,7 +209,7 @@ const SettingsPage = () => {
       {isDenied && (
         <div style={{ backgroundColor: '#FFFEEB', border: '1px solid #FFE58F', borderRadius: '16px', padding: '16px', marginBottom: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', color: '#856404' }}>
-            <ShieldAlert size={20} />
+            <AppIcon name="shield-exclamation" size={20} color="accent" />
             <span style={{ fontWeight: '700' }}>Notifiche Bloccate</span>
           </div>
           <p style={{ fontSize: '14px', color: '#856404', margin: '0 0 12px 0', lineHeight: '1.4' }}>
@@ -244,7 +239,7 @@ const SettingsPage = () => {
       <div style={styles.menuCard}>
         <button style={styles.menuItem} onClick={() => { if(!sosNumber) setIsEditingSos(true); else window.location.href=`tel:${sosNumber}`; }}>
           <div style={{ display: "flex", alignItems: "center" }}>
-            <div style={styles.iconWrapper("var(--color-accent)")}><ShieldAlert size={18} /></div>
+            <div style={styles.iconWrapper("var(--color-accent)")}><AppIcon name="shield-exclamation" size={18} color="white" /></div>
             <div>
               <span style={styles.itemLabel}>Contatto SOS</span>
               <div style={{fontSize: '12px', color: '#888'}}>{sosNumber ? `Chiama: ${sosNumber}` : 'Non impostato'}</div>
@@ -255,10 +250,10 @@ const SettingsPage = () => {
 
         <button style={{ ...styles.menuItem, borderBottom: "none" }} onClick={() => window.location.href="tel:02809767"}>
           <div style={{ display: "flex", alignItems: "center" }}>
-            <div style={styles.iconWrapper("var(--color-success)")}><HelpCircle size={18} /></div>
+            <div style={styles.iconWrapper("var(--color-success)")}><AppIcon name="shield-check" size={18} color="white" /></div>
             <span style={styles.itemLabel}>Pronto Alzheimer</span>
           </div>
-          <Phone size={18} color="var(--color-success)" />
+          <AppIcon name="phone-call" size={18} color="success" />
         </button>
       </div>
 

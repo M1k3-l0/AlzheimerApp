@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Heart, MessageSquare, Share2, Image as ImageIcon, ThumbsUp, Send, X, Edit2, Check, Trash2, Maximize2, User } from 'lucide-react';
+import { Heart, Share2, X, Edit2, Check, Maximize2, User } from 'lucide-react';
+import AppIcon from '../components/AppIcon';
 import { supabase } from '../supabaseClient';
 
 const FeedPage = () => {
@@ -187,21 +188,31 @@ const FeedPage = () => {
 
     const addComment = async (postId) => {
         if (!newCommentText.trim()) return;
-        
+        const text = newCommentText.trim();
         const commentObj = {
             post_id: postId,
+            author_id: user.id || (user.name + (user.surname || '')),
             author_name: user.name + ' ' + (user.surname || ''),
             author_photo: user.photo,
-            text: newCommentText
+            text
         };
 
-        const { error } = await supabase.from('comments').insert([commentObj]);
-        
+        const { data: inserted, error } = await supabase
+            .from('comments')
+            .insert([commentObj], { returning: 'representation' });
+
         if (error) {
             console.error("Errore salvataggio commento:", error);
             alert("Errore nel salvare il commento: " + error.message);
         } else {
             setNewCommentText('');
+            if (inserted?.[0]) {
+                setComments(prev => ({
+                    ...prev,
+                    [postId]: [...(prev[postId] || []), inserted[0]]
+                }));
+                setPosts(prev => prev.map(p => p.id === postId ? { ...p, comment_count: (p.comment_count || 0) + 1 } : p));
+            }
         }
     };
 
@@ -352,7 +363,7 @@ const FeedPage = () => {
                         </div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <button style={styles.actionBtn} onClick={() => fileInputRef.current.click()}><ImageIcon size={20} color="var(--color-primary)"/> Foto</button>
+                        <button style={styles.actionBtn} onClick={() => fileInputRef.current.click()}><AppIcon name="picture" size={20} color="primary"/> Foto</button>
                         <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleImageChange} />
                         <button style={styles.btnPrimary} onClick={createPost}>Pubblica</button>
                     </div>
@@ -377,7 +388,7 @@ const FeedPage = () => {
                                 <div style={{ fontSize: '11px', color: '#999' }}>{new Date(post.created_at).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
                             </div>
                         </div>
-                        <button style={{ background: 'none', border: 'none', color: '#ccc' }} onClick={() => deletePost(post.id)}><Trash2 size={16}/></button>
+                        <button style={{ background: 'none', border: 'none' }} onClick={() => deletePost(post.id)} aria-label="Elimina"><AppIcon name="trash" size={18} color="error" /></button>
                     </div>
 
                     <div style={{ fontSize: '16px', color: '#333', marginBottom: '8px', textAlign: 'left', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{post.text}</div>
@@ -395,10 +406,10 @@ const FeedPage = () => {
 
                     <div style={{ display: 'flex', gap: '20px', marginTop: '4px' }}>
                         <button style={styles.actionBtn} onClick={() => handleLike(post.id, post.likes)}>
-                            <ThumbsUp size={18} fill={likedPosts.includes(post.id) ? "var(--color-primary)" : "none"} color={likedPosts.includes(post.id) ? "var(--color-primary)" : "currentColor"}/> 
+                            <AppIcon name="thumbs-up" size={18} color={likedPosts.includes(post.id) ? 'primary' : 'textSecondary'} />
                             Mi piace
                         </button>
-                        <button style={styles.actionBtn} onClick={() => toggleComments(post.id)}><MessageSquare size={18}/> Commenta</button>
+                        <button style={styles.actionBtn} onClick={() => toggleComments(post.id)}><AppIcon name="comments" size={18} color="primary"/> Commenta</button>
                     </div>
 
                     {/* Sezione Commenti */}
@@ -406,7 +417,7 @@ const FeedPage = () => {
                         <div style={styles.commentSection}>
                             {(comments[post.id] || []).map(comm => (
                                 <div key={comm.id} style={styles.comment}>
-                                    <div style={styles.avatarSmall}>
+                                    <div style={styles.avatarSmall()}>
                                         {comm.author_photo ? <img src={comm.author_photo} style={styles.avatarImg} alt="C" /> : comm.author_name[0]}
                                     </div>
                                     <div style={styles.commentBubble}>
@@ -417,7 +428,7 @@ const FeedPage = () => {
                             ))}
                             
                             <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                                <div style={styles.avatarSmall}>
+                                <div style={styles.avatarSmall()}>
                                     {user.photo ? <img src={user.photo} style={styles.avatarImg} alt="Me" /> : user.name[0]}
                                 </div>
                                 <input 
@@ -427,7 +438,7 @@ const FeedPage = () => {
                                     onChange={(e) => setNewCommentText(e.target.value)}
                                     onKeyPress={(e) => e.key === 'Enter' && addComment(post.id)}
                                 />
-                                <button style={{ border: 'none', background: 'none', color: 'var(--color-primary)' }} onClick={() => addComment(post.id)}><Send size={20}/></button>
+                                <button style={{ border: 'none', background: 'none', color: 'var(--color-primary)' }} onClick={() => addComment(post.id)} aria-label="Invia"><AppIcon name="paper-plane" size={20} color="primary"/></button>
                             </div>
                         </div>
                     )}

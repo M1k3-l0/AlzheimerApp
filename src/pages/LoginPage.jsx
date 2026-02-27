@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import AppIcon from '../components/AppIcon';
+import AuthHeader from '../components/AuthHeader';
 import { supabase } from '../supabaseClient';
 
 const LoginPage = () => {
@@ -95,21 +97,9 @@ const LoginPage = () => {
             backgroundColor: 'white',
             borderRadius: '24px',
             padding: '40px 30px',
-            width: '100%',
-            maxWidth: '400px',
             boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
             border: '1px solid var(--color-border)'
         },
-        logoText: {
-            fontFamily: "'Playfair Display', serif",
-            fontWeight: 700,
-            letterSpacing: '2px',
-            fontSize: '28px',
-            color: 'var(--color-primary)',
-            marginBottom: '16px',
-            textAlign: 'center',
-        },
-        logoImage: { width: '80px', height: '80px', marginBottom: '20px', borderRadius: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' },
         title: { fontSize: '26px', fontWeight: '800', marginBottom: '8px', color: 'var(--color-primary)' },
         subtitle: { fontSize: '15px', color: '#666', marginBottom: '32px' },
         form: { display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' },
@@ -148,10 +138,9 @@ const LoginPage = () => {
     };
 
     return (
-        <div style={styles.container}>
-            <div style={styles.card}>
-                <div style={styles.logoText}>MEMORA</div>
-                <img src="/logo.png" alt="Memora Logo" style={styles.logoImage} />
+        <div className="auth-page" style={styles.container}>
+            <div className="auth-card" style={styles.card}>
+                <AuthHeader />
                 <h1 style={styles.title}>Bentornat*</h1>
                 <p style={styles.subtitle}>Inserisci le tue credenziali per accedere</p>
 
@@ -161,7 +150,7 @@ const LoginPage = () => {
                     <div style={styles.inputGroup}>
                         <label style={styles.label}>Email</label>
                         <div style={styles.inputWrapper}>
-                            <Mail size={18} style={styles.icon}/>
+                            <AppIcon name="envelope" size={18} color="primary" style={styles.icon}/>
                             <input 
                                 style={styles.input} 
                                 type="email" 
@@ -176,7 +165,7 @@ const LoginPage = () => {
                     <div style={styles.inputGroup}>
                         <label style={styles.label}>Password</label>
                         <div style={styles.inputWrapper}>
-                            <Lock size={18} style={styles.icon}/>
+                            <AppIcon name="lock" size={18} color="primary" style={styles.icon}/>
                             <input 
                                 style={styles.input} 
                                 type="password" 

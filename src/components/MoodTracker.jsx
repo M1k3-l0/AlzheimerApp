@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Smile, Meh, Frown } from 'lucide-react';
+import AppIcon from './AppIcon';
 
-/** Colori attivi dalla palette */
+/** Colori faccine in ordine: verde, giallo, rosso (alto contrasto) */
 const MOOD_ACTIVE_COLORS = {
-  happy: '#22c55e',
-  neutral: '#eab308',
-  sad: '#ef4444',
+  happy: '#16a34a',
+  neutral: '#ca8a04',
+  sad: '#dc2626',
 };
+/** Colore faccine non selezionate: grigio visibile su sfondo chiaro */
+const MOOD_INACTIVE_COLOR = '#64748b';
 
 /** Label per la sezione resoconto */
 const moodPalette = {
@@ -17,10 +18,11 @@ const moodPalette = {
   sad: 'Triste',
 };
 
+/** Ordine: grin (felice), face-expressionless (neutro), sad (triste) */
 const moods = [
-  { id: 'happy', icon: Smile, label: 'Felice' },
-  { id: 'neutral', icon: Meh, label: 'Neutro' },
-  { id: 'sad', icon: Frown, label: 'Triste' },
+  { id: 'happy', iconName: 'grin', label: 'Felice' },
+  { id: 'neutral', iconName: 'face-expressionless', label: 'Neutro' },
+  { id: 'sad', iconName: 'sad', label: 'Triste' },
 ];
 
 /**
@@ -49,10 +51,10 @@ const MoodTracker = ({ userRole, mood, setMood, moodToast, reduceMotion = false 
 
   const styles = {
     card: {
-      backgroundColor: 'white',
+      backgroundColor: 'var(--color-bg-secondary)',
       borderRadius: 'var(--card-radius-lg)',
       padding: 'var(--content-padding-y)',
-      boxShadow: 'var(--card-shadow)',
+      boxShadow: 'var(--card-shadow-outer)',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -63,8 +65,8 @@ const MoodTracker = ({ userRole, mood, setMood, moodToast, reduceMotion = false 
       minWidth: 0,
       boxSizing: 'border-box',
     },
-    title: { fontWeight: 'bold', fontSize: '18px' },
-    resoconto: {
+    title: { fontWeight: 'bold', fontSize: '18px', color: 'var(--color-primary-dark)' },
+    lastMood: {
       fontSize: '15px',
       fontWeight: '600',
       color: 'var(--color-primary)',
@@ -72,9 +74,7 @@ const MoodTracker = ({ userRole, mood, setMood, moodToast, reduceMotion = false 
       marginBottom: '4px',
     },
     toast: { fontSize: '13px', color: 'var(--color-primary)', fontWeight: '600', marginTop: '8px', display: 'block' },
-    debugMood: { fontSize: '12px', color: '#16a34a', fontWeight: '600', marginTop: '4px', display: 'block' },
-    hint: { fontSize: '12px', color: '#6B7280', marginTop: '8px' },
-    link: { fontSize: '13px', color: 'var(--color-primary)', fontWeight: '600', marginTop: '10px', textDecoration: 'none', display: 'inline-block' },
+    hint: { fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '8px' },
   };
 
   return (
@@ -85,7 +85,6 @@ const MoodTracker = ({ userRole, mood, setMood, moodToast, reduceMotion = false 
 
       <div className="mood-tracker-buttons" role="group" aria-label="Seleziona umore">
         {moods.map((m) => {
-          const Icon = m.icon;
           const isSelected = (selectedMood ?? mood) === m.id;
           const activeColor = MOOD_ACTIVE_COLORS[m.id];
           return (
@@ -105,10 +104,10 @@ const MoodTracker = ({ userRole, mood, setMood, moodToast, reduceMotion = false 
                 opacity: isNurse && !isSelected && mood ? 0.5 : 1,
               }}
             >
-              <Icon
+              <AppIcon
+                name={m.iconName}
                 size={48}
-                color={isSelected ? activeColor : '#cbd5e1'}
-                strokeWidth={1.75}
+                color={isSelected ? activeColor : MOOD_INACTIVE_COLOR}
                 aria-hidden
               />
             </button>
@@ -116,12 +115,8 @@ const MoodTracker = ({ userRole, mood, setMood, moodToast, reduceMotion = false 
         })}
       </div>
 
-      {/* Sezione resoconto: legge da moodHistory (prop mood sincronizzato dal padre) */}
-      <div style={styles.resoconto}>
-        {mood ? moodPalette[mood] : 'Nessun dato'}
-      </div>
-      {/* Debug: conferma che il dato arriva (temporaneo, in rosso) */}
-      <div style={styles.debugMood}>
+      {/* Solo ultimo umore ricevuto */}
+      <div style={styles.lastMood}>
         Ultimo umore ricevuto: {mood ? moodPalette[mood] : '—'}
       </div>
 
@@ -137,9 +132,6 @@ const MoodTracker = ({ userRole, mood, setMood, moodToast, reduceMotion = false 
       <span style={styles.hint}>
         {isPatient ? "Tocca l'emozione che provi ora" : "L'ultimo umore registrato dal paziente"}
       </span>
-      <Link to="/report-umore" style={styles.link}>
-        Vedi report umore →
-      </Link>
     </div>
   );
 };

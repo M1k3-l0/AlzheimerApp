@@ -56,7 +56,8 @@
     min-width: 0;
 }
 
-.tab svg {
+.tab svg,
+.tab [role="img"] {
     width: 1.5rem;
     height: 1.5rem;
 }

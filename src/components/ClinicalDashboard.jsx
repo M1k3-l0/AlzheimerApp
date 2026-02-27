@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { getMoodHistory, getMoodColor } from '../utils/moodHistory';
-import { AlertTriangle, Activity, FileText, TrendingUp, CheckCircle2, XCircle } from 'lucide-react';
+import { AlertTriangle, Activity, FileText, TrendingUp, XCircle } from 'lucide-react';
+import AppIcon from './AppIcon';
 
 const MOOD_LABELS = { happy: 'Felice', neutral: 'Neutro', sad: 'Triste' };
 const NOTES_STORAGE_KEY = 'alzheimer_clinical_notes';
@@ -279,7 +280,7 @@ export default function ClinicalDashboard() {
                     <td style={styles.td}>
                       {t.completed ? (
                         <span style={{ color: '#059669', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <CheckCircle2 size={16} /> Completato
+                          <AppIcon name="badge-check" size={16} color="primary" /> Completato
                         </span>
                       ) : (
                         <span style={{ color: '#DC2626', display: 'flex', alignItems: 'center', gap: '6px' }}>

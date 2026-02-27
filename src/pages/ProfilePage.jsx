@@ -1,17 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-    Settings, 
-    LogOut, 
-    Mail, 
-    Shield, 
-    Calendar,
-    Smile,
-    Meh,
-    Frown,
-    Camera
-} from 'lucide-react';
+import { LogOut } from 'lucide-react';
+import AppIcon from '../components/AppIcon';
 import { supabase } from '../supabaseClient';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { getMoodColor, addMoodEntry } from '../utils/moodHistory';
 
 const ProfilePage = () => {
@@ -93,6 +84,7 @@ const ProfilePage = () => {
             const updated = { ...user, photo: photoUrl };
             setUser(updated);
             localStorage.setItem('alzheimer_user', JSON.stringify(updated));
+            window.dispatchEvent(new Event('storage'));
         } catch (err) {
             console.error('Errore upload foto:', err);
             alert('Impossibile caricare la foto. Verifica che il bucket "avatars" esista in Supabase con accesso pubblico.');
@@ -122,12 +114,9 @@ const ProfilePage = () => {
 
     const getMoodIcon = (mood) => {
         const color = getMoodColor(mood);
-        switch (mood) {
-            case 'happy': return <Smile size={20} color={color} />;
-            case 'neutral': return <Meh size={20} color={color} />;
-            case 'sad': return <Frown size={20} color={color} />;
-            default: return null;
-        }
+        const iconMap = { happy: 'grin', neutral: 'face-expressionless', sad: 'sad' };
+        const name = iconMap[mood];
+        return name ? <AppIcon name={name} size={20} color={color} /> : null;
     };
 
     const getMoodEmoji = (mood) => {
@@ -347,7 +336,7 @@ const ProfilePage = () => {
                             {user.photo ? <img src={user.photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Profile" /> : user.name?.[0]}
                         </div>
                         <span style={styles.avatarOverlay}>
-                            <Camera size={24} color="white" />
+                            <AppIcon name="camera" size={24} color="white" />
                             {uploadingPhoto ? '...' : 'Cambia'}
                         </span>
                     </button>
@@ -361,13 +350,13 @@ const ProfilePage = () => {
                 {isPatient && (
                     <div style={styles.moodIconContainer}>
                         <button type="button" style={styles.moodBtn('happy')} onClick={() => handleMoodSelect('happy')} aria-label="Felice">
-                            <Smile size={24} color={currentMood === 'happy' ? getMoodColor('happy') : '#9CA3AF'} />
+                            <AppIcon name="grin" size={24} color={currentMood === 'happy' ? getMoodColor('happy') : '#9CA3AF'} />
                         </button>
                         <button type="button" style={styles.moodBtn('neutral')} onClick={() => handleMoodSelect('neutral')} aria-label="Neutro">
-                            <Meh size={24} color={currentMood === 'neutral' ? getMoodColor('neutral') : '#9CA3AF'} />
+                            <AppIcon name="face-expressionless" size={24} color={currentMood === 'neutral' ? getMoodColor('neutral') : '#9CA3AF'} />
                         </button>
                         <button type="button" style={styles.moodBtn('sad')} onClick={() => handleMoodSelect('sad')} aria-label="Triste">
-                            <Frown size={24} color={currentMood === 'sad' ? getMoodColor('sad') : '#9CA3AF'} />
+                            <AppIcon name="sad" size={24} color={currentMood === 'sad' ? getMoodColor('sad') : '#9CA3AF'} />
                         </button>
                     </div>
                 )}
@@ -378,15 +367,15 @@ const ProfilePage = () => {
             {/* Account Details Card */}
             <div style={styles.infoCard}>
                 <div style={styles.infoRow}>
-                    <Mail size={20} color="var(--color-primary)" />
+                    <AppIcon name="envelope" size={20} color="primary" />
                     <span>{user.email || 'Email non disponibile'}</span>
                 </div>
                 <div style={styles.infoRow}>
-                    <Shield size={20} color="var(--color-primary)" />
+                    <AppIcon name="shield-check" size={20} color="primary" />
                     <span>Ruolo: <strong>{getRoleLabel(user.role)}</strong></span>
                 </div>
                 <div style={{ ...styles.infoRow, borderBottom: 'none' }}>
-                    <Calendar size={20} color="var(--color-primary)" />
+                    <AppIcon name="calendar-lines" size={20} color="primary" />
                     <span>Iscritto a Gennaio 2026</span>
                 </div>
             </div>
@@ -394,9 +383,13 @@ const ProfilePage = () => {
             {/* Quick Actions Card */}
             <div style={styles.actionCard}>
                 <button style={styles.actionBtn} onClick={() => navigate('/impostazioni')}>
-                    <Settings size={18} color="#6B7280" />
+                    <AppIcon name="settings" size={18} color="primaryDark" />
                     <span>Impostazioni App</span>
                 </button>
+                <Link to="/report-umore" style={{ ...styles.actionBtn, textDecoration: 'none', borderTop: '1px solid var(--color-border)' }}>
+                    <AppIcon name="calendar-lines" size={18} color="primaryDark" />
+                    <span>Report umore</span>
+                </Link>
             </div>
 
             {/* Logout Button */}

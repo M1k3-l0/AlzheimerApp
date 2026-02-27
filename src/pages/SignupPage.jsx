@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Mail, Lock, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import AppIcon from '../components/AppIcon';
+import AuthHeader from '../components/AuthHeader';
 import { supabase } from '../supabaseClient';
 
 const SignupPage = () => {
@@ -75,19 +77,8 @@ const SignupPage = () => {
             backgroundColor: 'white',
             borderRadius: '24px',
             padding: '30px',
-            width: '100%',
-            maxWidth: '400px',
             boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
             border: '1px solid var(--color-border)'
-        },
-        logoText: {
-            fontFamily: "'Playfair Display', serif",
-            fontWeight: 700,
-            letterSpacing: '2px',
-            fontSize: '28px',
-            color: 'var(--color-primary)',
-            marginBottom: '16px',
-            textAlign: 'center',
         },
         title: { fontSize: '24px', fontWeight: '800', color: 'var(--color-primary)', marginBottom: '8px' },
         subtitle: { fontSize: '14px', color: '#666', marginBottom: '24px' },
@@ -121,10 +112,9 @@ const SignupPage = () => {
     };
 
     return (
-        <div style={styles.container}>
-            <div style={styles.card}>
-                <div style={styles.logoText}>MEMORA</div>
-                <img src="/logo.png" alt="Memora Logo" style={{width: 60, height: 60, borderRadius: 12, marginBottom: 15}}/>
+        <div className="auth-page" style={styles.container}>
+            <div className="auth-card" style={styles.card}>
+                <AuthHeader />
                 <h1 style={styles.title}>Crea Account</h1>
                 <p style={styles.subtitle}>Unisciti alla nostra community</p>
 
@@ -139,14 +129,14 @@ const SignupPage = () => {
                         <div style={styles.inputGroup}>
                             <label style={styles.label}>Nome</label>
                             <div style={styles.inputWrapper}>
-                                <User size={18} style={styles.icon}/>
+                                <AppIcon name="user" size={18} color="primary" style={styles.icon}/>
                                 <input name="name" style={styles.input} placeholder="Mario" required onChange={handleChange} />
                             </div>
                         </div>
                         <div style={styles.inputGroup}>
                             <label style={styles.label}>Cognome</label>
                             <div style={styles.inputWrapper}>
-                                <User size={18} style={styles.icon}/>
+                                <AppIcon name="user" size={18} color="primary" style={styles.icon}/>
                                 <input name="surname" style={styles.input} placeholder="Rossi" required onChange={handleChange} />
                             </div>
                         </div>
@@ -155,7 +145,7 @@ const SignupPage = () => {
                     <div style={styles.inputGroup}>
                         <label style={styles.label}>Email</label>
                         <div style={styles.inputWrapper}>
-                            <Mail size={18} style={styles.icon}/>
+                            <AppIcon name="envelope" size={18} color="primary" style={styles.icon}/>
                             <input name="email" type="email" style={styles.input} placeholder="mario@email.com" required onChange={handleChange} />
                         </div>
                     </div>
@@ -163,7 +153,7 @@ const SignupPage = () => {
                     <div style={styles.inputGroup}>
                         <label style={styles.label}>Ruolo</label>
                         <div style={styles.inputWrapper}>
-                            <User size={18} style={styles.icon}/>
+                            <AppIcon name="user" size={18} color="primary" style={styles.icon}/>
                             <select name="role" style={styles.input} value={formData.role} onChange={handleChange} required>
                                 <option value="caregiver">Familiare / Caregiver</option>
                                 <option value="patient">Paziente</option>
@@ -175,7 +165,7 @@ const SignupPage = () => {
                     <div style={styles.inputGroup}>
                         <label style={styles.label}>Password</label>
                         <div style={styles.inputWrapper}>
-                            <Lock size={18} style={styles.icon}/>
+                            <AppIcon name="lock" size={18} color="primary" style={styles.icon}/>
                             <input name="password" type="password" style={styles.input} placeholder="••••••••" required minLength={6} onChange={handleChange} />
                         </div>
                     </div>

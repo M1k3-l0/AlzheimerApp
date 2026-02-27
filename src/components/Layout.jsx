@@ -24,7 +24,7 @@ const Layout = () => {
 
     const getTitle = (path) => {
         switch (path) {
-            case '/': return 'Le mie Attività';
+            case '/': return 'Home';
             case '/chat': return 'Messaggi';
             case '/feed': return 'Memoriae';
             case '/impostazioni': return 'Impostazioni';
@@ -33,14 +33,14 @@ const Layout = () => {
         }
     };
 
-    const isHome = location.pathname === '/';
     const isFullPage = ['/chat', '/feed', '/profilo'].includes(location.pathname);
     const isChatPage = location.pathname === '/chat';
+    const isProfilePage = location.pathname === '/profilo';
 
     return (
         <div className={`app-container${isFullPage ? ' full-page' : ''}`}>
-            {!isHome && <Header title={getTitle(location.pathname)} />}
-            <main className={`main-content${isFullPage ? ' full-page' : ''}${isChatPage ? ' full-page-fill' : ''}`} style={{ paddingTop: isHome ? 0 : 'var(--header-height)' }}>
+            <Header title={getTitle(location.pathname)} />
+            <main className={`main-content${isFullPage ? ' full-page' : ''}${isChatPage ? ' full-page-fill' : ''}${isProfilePage ? ' page-profilo' : ''}`} style={{ paddingTop: 'var(--header-height)' }}>
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={location.pathname}

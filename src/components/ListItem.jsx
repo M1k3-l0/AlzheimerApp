@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check } from 'lucide-react';
+import AppIcon from './AppIcon';
 
 const ListItem = ({ text, isCompleted, onToggle }) => {
     const styles = {
@@ -34,7 +34,7 @@ const ListItem = ({ text, isCompleted, onToggle }) => {
     return (
         <div style={styles.container} onClick={onToggle}>
             <div style={styles.checkbox}>
-                {isCompleted && <Check color="#fff" size={28} />}
+                {isCompleted && <AppIcon name="badge-check" size={28} color="white" />}
             </div>
             <span style={styles.text}>{text}</span>
         </div>

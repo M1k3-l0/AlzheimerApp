@@ -1,19 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { 
-    Bell, 
-    Calendar, 
-    Plus, 
-    Heart,
-    Trash2,
-    CheckCircle2,
-    Settings,
-    Apple,
-    Footprints,
-    Brain,
-    Droplets
-} from 'lucide-react';
+import { Trash2 } from 'lucide-react';
+import AppIcon from '../components/AppIcon';
 import { supabase } from '../supabaseClient';
 import { wellnessQuotes, getDayOfYear } from '../data/quotes';
 import { addMoodEntry, getMoodHistory, getLatestMood } from '../utils/moodHistory';
@@ -28,7 +16,7 @@ const initialTasks = [
     { id: 5, text: 'Chiudere la porta a chiave', time: '21:00', completed: false },
 ];
 
-const QUOTE_ICON_COLOR = '#D97706';
+const QUOTE_ICON_COLOR = 'var(--color-primary)';
 
 /** Converte "HH:MM" o "H:MM" in minuti dall'inizio del giorno per ordinare per orario */
 function timeToMinutes(timeStr) {
@@ -37,13 +25,6 @@ function timeToMinutes(timeStr) {
   if (!parts) return Infinity;
   return parseInt(parts[1], 10) * 60 + parseInt(parts[2], 10);
 }
-
-const categoryIcons = {
-  nutrizione: Apple,
-  movimento: Footprints,
-  mente: Brain,
-  idratazione: Droplets,
-};
 
 const ListPage = () => {
     const user = JSON.parse(localStorage.getItem('alzheimer_user') || '{}');
@@ -206,23 +187,13 @@ const ListPage = () => {
             fontWeight: 'bold',
             color: '#1A1A1A',
         },
-        settingsLink: {
-            color: '#9CA3AF',
-            padding: '8px',
-            backgroundColor: 'white',
-            borderRadius: 'var(--card-radius)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: 'var(--card-shadow)',
-        },
         agendaCard: {
             background: 'var(--color-primary)',
             borderRadius: 'var(--card-radius-lg)',
             padding: 'var(--content-padding-y) 20px',
             color: 'white',
             marginBottom: 'var(--section-gap)',
-            boxShadow: '0 4px 16px rgba(146, 72, 122, 0.25), 0 2px 6px rgba(0, 0, 0, 0.06)',
+            boxShadow: 'var(--card-shadow-outer)',
         },
         agendaDateRow: {
             display: 'flex',
@@ -321,6 +292,7 @@ const ListPage = () => {
             borderRadius: 'var(--card-radius-lg)',
             padding: 'var(--content-padding-y)',
             border: '1px solid rgba(234, 172, 139, 0.5)',
+            boxShadow: 'var(--card-shadow-outer)',
             position: 'relative',
             overflow: 'hidden',
             minWidth: 0,
@@ -361,7 +333,7 @@ const ListPage = () => {
             backgroundColor: 'white',
             padding: 'var(--content-padding-y)',
             borderRadius: 'var(--card-radius)',
-            boxShadow: 'var(--card-shadow)',
+            boxShadow: 'var(--card-shadow-outer)',
             marginTop: 'var(--section-gap)',
             marginBottom: 'var(--section-gap)',
             maxWidth: '100%',
@@ -381,18 +353,15 @@ const ListPage = () => {
 
     return (
         <div style={styles.container}>
-            {/* Header: saluto e impostazioni */}
+            {/* Header: solo saluto (impostazioni solo nell'header globale) */}
             <div style={styles.header}>
                 <div style={styles.greeting}>Ciao, {user.name || 'lol'}!</div>
-                <Link to="/impostazioni" style={styles.settingsLink} aria-label="Impostazioni">
-                    <Settings size={20} />
-                </Link>
             </div>
 
-            {/* Notification Alert */}
+            {/* Notification Alert: mobile in alto; desktop ridimensionata sotto Stato paziente (via CSS) */}
             {!notificationsEnabled && (
-                <div style={{ margin: '0 0 20px 0', padding: '16px', backgroundColor: '#FFF4E5', border: '1px solid #FFE58F', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <Bell style={{ color: '#E67E22' }} size={24} />
+                <div className="home-notification-mobile" style={{ margin: '0 0 20px 0', padding: '16px', backgroundColor: '#FFF4E5', border: '1px solid #FFE58F', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <AppIcon name="bell-slash" size={24} color="accent" />
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 'bold', color: '#856404', fontSize: '15px' }}>Avvisi Disattivati</div>
                     </div>
@@ -406,17 +375,18 @@ const ListPage = () => {
                 </div>
             )}
 
-            {/* Paziente / Caregiver: Pillola, Agenda, Stato del Paziente */}
+            {/* Paziente / Caregiver: unico blocco; desktop: sx Agenda, dx Stato+Pillola (stessa altezza) */}
             {!isHealthcare && (
-            <>
-            {/* Agenda di Oggi: data + calendario e attività */}
+            <div className="home-content-block">
+            {/* Colonna sx desktop / primo mobile: Agenda di Oggi */}
+            <div className="home-block-item home-agenda">
             <div style={styles.agendaCard}>
                 <div style={styles.agendaDateRow}>
-                    <Calendar size={20} />
+                    <AppIcon name="calendar-lines" size={20} color="primaryDark" />
                     <span>{new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
                 </div>
                 <div style={styles.cardTitle}>
-                    <CheckCircle2 size={24} />
+                    <AppIcon name="badge-check" size={24} color="primary" />
                     <span>Agenda di Oggi</span>
                 </div>
 
@@ -438,7 +408,7 @@ const ListPage = () => {
                     >
                         <div className="agenda-item-left" style={styles.taskLeft}>
                             <div className="plus-icon-container" style={styles.taskIcon}>
-                                {task.completed ? <CheckCircle2 size={18} /> : <Plus size={18} />}
+                                {task.completed ? <AppIcon name="badge-check" size={18} color="primary" /> : <AppIcon name="add" size={18} color="primary" />}
                             </div>
                             <span style={{
                                 ...styles.taskText,
@@ -505,50 +475,63 @@ const ListPage = () => {
                 </motion.div>
             )}
             </AnimatePresence>
-
-            {/* Secondary Cards Row (ultimo blocco: padding-bottom su mobile per superare la navbar) */}
-            <div className="last-scroll-block" style={styles.secondaryCards}>
-                {/* Mood Card: setMood = handleMoodSelect (salva umore + aggiorna resoconto) */}
-                <motion.div
-                    style={{ ...styles.whiteCard, pointerEvents: 'auto', position: 'relative', zIndex: 10 }}
-                    initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: reduceMotion ? 0 : 0.3, delay: reduceMotion ? 0 : 0.1 }}
-                >
-                    <MoodTracker
-                        userRole={user.role}
-                        mood={currentMood}
-                        setMood={handleMoodSelect}
-                        moodToast={moodToast}
-                        reduceMotion={!!reduceMotion}
-                    />
-                </motion.div>
-
-                {/* Pillola di Benessere: frase del giorno + icona per categoria (responsive su mobile) */}
-                <motion.div 
-                    className="quote-card-responsive"
-                    style={styles.quoteCard}
-                    initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: reduceMotion ? 0 : 0.3, delay: reduceMotion ? 0 : 0.15 }}
-                >
-                    <span style={styles.quoteLabel}>Pillola di Benessere</span>
-                    <div style={styles.quoteRow}>
-                        {dailyQuoteData && (() => {
-                            const IconComponent = categoryIcons[dailyQuoteData.category] || Heart;
-                            return (
-                                <span style={styles.quoteIconWrap} aria-hidden>
-                                    <IconComponent size={24} color={QUOTE_ICON_COLOR} />
-                                </span>
-                            );
-                        })()}
-                        <p className="quote-text-responsive" style={styles.quoteText}>
-                            "{dailyQuoteData?.text ?? ''}"
-                        </p>
-                    </div>
-                </motion.div>
             </div>
-            </>
+
+            {/* Colonna dx desktop: Stato + Pillola in un blocco che ha la stessa altezza dell'Agenda */}
+            <div className="home-right-column">
+                <div className="home-block-item home-stato-paziente">
+                    <motion.div
+                        style={{
+                            backgroundColor: 'transparent',
+                            borderRadius: 'var(--card-radius-lg)',
+                            padding: 0,
+                            width: '100%',
+                            pointerEvents: 'auto',
+                            position: 'relative',
+                            zIndex: 10,
+                        }}
+                        initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: reduceMotion ? 0 : 0.3, delay: reduceMotion ? 0 : 0.1 }}
+                    >
+                        <MoodTracker
+                            userRole={user.role}
+                            mood={currentMood}
+                            setMood={handleMoodSelect}
+                            moodToast={moodToast}
+                            reduceMotion={!!reduceMotion}
+                        />
+                    </motion.div>
+                </div>
+                {!notificationsEnabled && (
+                    <div className="home-notification-desktop">
+                        <AppIcon name="bell-slash" size={18} color="accent" />
+                        <span>Avvisi Disattivati</span>
+                    </div>
+                )}
+                <div className="home-block-item home-pillola last-scroll-block">
+                    <motion.div 
+                        className="quote-card-responsive"
+                        style={styles.quoteCard}
+                        initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: reduceMotion ? 0 : 0.3, delay: reduceMotion ? 0 : 0.15 }}
+                    >
+                        <span style={styles.quoteLabel}>Pillola di Benessere</span>
+                        <div style={styles.quoteRow}>
+                            {dailyQuoteData && (
+                                <span style={styles.quoteIconWrap} aria-hidden>
+                                    <AppIcon name="shoe-prints" size={24} color={QUOTE_ICON_COLOR} />
+                                </span>
+                            )}
+                            <p className="quote-text-responsive" style={styles.quoteText}>
+                                "{dailyQuoteData?.text ?? ''}"
+                            </p>
+                        </div>
+                    </motion.div>
+                </div>
+            </div>
+            </div>
             )}
         </div>
     );

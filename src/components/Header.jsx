@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Settings, User } from 'lucide-react';
+import AppIcon from './AppIcon';
 import { useState, useEffect } from 'react';
 
 const Header = ({ title }) => {
@@ -83,13 +83,13 @@ const Header = ({ title }) => {
                     {user.photo ? (
                         <img src={user.photo} style={styles.avatarImg} alt="Profilo" />
                     ) : (
-                        user.name?.[0] || <User size={20} />
+                        user.name?.[0] || <AppIcon name="user" size={20} />
                     )}
                 </div>
             </Link>
             <h1 style={styles.title}>{title}</h1>
             <Link to="/impostazioni" className="app-header-settings" style={styles.settingsBtn}>
-                <Settings />
+                <AppIcon name="settings" size={24} />
             </Link>
         </header>
     );
