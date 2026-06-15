@@ -1,0 +1,647 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
+import AppIcon from '../components/AppIcon';
+import {
+    withMockPrivateMessages,
+    formatPrivateMessage,
+    appendLocalPrivateMessage,
+} from '../utils/chatMockData';
+import { formatFullName, getSearchAvatarUrl } from '../utils/avatarUtils';
+
+const VoicePlayer = ({ url, isMe, userPhoto, userName }) => {
+    const [isPlaying, setIsPlaying] = React.useState(false);
+    const [progress, setProgress] = React.useState(0);
+    const [duration, setDuration] = React.useState(0);
+    const audioRef = React.useRef(null);
+
+    const togglePlay = (e) => {
+        e.stopPropagation();
+        if (!audioRef.current) return;
+
+        if (isPlaying) {
+            audioRef.current.pause();
+            setIsPlaying(false);
+        } else {
+            // Su iOS la durata potrebbe essere Infinity inizialmente
+            const playPromise = audioRef.current.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    setIsPlaying(true);
+                }).catch(error => {
+                    console.error("Errore riproduzione:", error);
+                    setIsPlaying(false);
+                });
+            }
+        }
+    };
+
+    const handleTimeUpdate = () => {
+        if (!audioRef.current) return;
+        const current = audioRef.current.currentTime;
+        const total = audioRef.current.duration;
+        
+        if (total && total !== Infinity) {
+            setProgress((current / total) * 100);
+            setDuration(total);
+        } else if (current > 0) {
+            // Se sta riproducendo ma non conosciamo il totale, mostriamo comunque avanzamento
+            setProgress(0); // O una gestione alternativa
+        }
+    };
+
+    const handleLoadedMetadata = () => {
+        if (!audioRef.current) return;
+        const total = audioRef.current.duration;
+        if (total && total !== Infinity) {
+            setDuration(total);
+        }
+    };
+
+    const formatTime = (time) => {
+        if (!time || time === Infinity) return "0:00";
+        const mins = Math.floor(time / 60);
+        const secs = Math.floor(time % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    // Genera barrette waveform simulate
+    const bars = [15, 25, 20, 35, 15, 40, 25, 30, 20, 35, 25, 15, 25, 40, 20, 30, 15, 25, 20];
+
+    return (
+        <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '10px', 
+            minWidth: '240px',
+            padding: '4px 0'
+        }}>
+            {/* Play Button */}
+            <button 
+                onClick={togglePlay}
+                style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                }}
+            >
+                <AppIcon name={isPlaying ? "pause" : "play"} size={28} color={isMe ? "white" : "primary"} />
+            </button>
+
+            {/* Waveform Area */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '2px', 
+                    height: '24px',
+                    position: 'relative'
+                }}>
+                    {bars.map((height, i) => {
+                        const barProgress = (i / bars.length) * 100;
+                        const isActive = progress > barProgress;
+                        return (
+                            <div key={i} style={{
+                                width: '3px',
+                                height: `${height}%`,
+                                backgroundColor: isActive 
+                                     ? (isMe ? 'white' : 'var(--color-primary)') 
+                                     : (isMe ? 'rgba(255,255,255,0.4)' : '#D1D5DB'),
+                                borderRadius: '2px',
+                                transition: 'background-color 0.2s'
+                            }} />
+                        );
+                    })}
+                </div>
+                <div style={{ fontSize: '0.625rem', opacity: 0.8, fontWeight: '600' }}>
+                    {formatTime(isPlaying ? audioRef.current?.currentTime : duration)}
+                </div>
+            </div>
+
+            {/* User Avatar with Mic Overlay */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+                <div style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    backgroundColor: isMe ? 'rgba(255,255,255,0.2)' : '#E5E7EB',
+                    border: isMe ? '2px solid rgba(255,255,255,0.5)' : '2px solid var(--color-primary-light)'
+                }}>
+                    {userPhoto ? (
+                        <img src={userPhoto} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="U" />
+                    ) : (
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.125rem', fontWeight: 'bold' }}>
+                            {userName?.[0]}
+                        </div>
+                    )}
+                </div>
+                <div style={{
+                    position: 'absolute',
+                    bottom: '-2px',
+                    right: '-2px',
+                    backgroundColor: 'white',
+                    borderRadius: '50%',
+                    width: '18px',
+                    height: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    border: '1px solid #eee'
+                }}>
+                    <AppIcon name="microphone" size={10} color="primary" />
+                </div>
+            </div>
+            
+            <audio 
+                ref={audioRef} 
+                src={url} 
+                onTimeUpdate={handleTimeUpdate}
+                onEnded={() => setIsPlaying(false)}
+                onLoadedMetadata={handleLoadedMetadata}
+                preload="auto"
+                hidden 
+            />
+        </div>
+    );
+};
+
+const PrivateChatPage = () => {
+    const { receiverId } = useParams();
+    const navigate = useNavigate();
+    const [messages, setMessages] = useState([]);
+    const [inputText, setInputText] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [receiverProfile, setReceiverProfile] = useState(null);
+    const [hasMockThread, setHasMockThread] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingDuration, setRecordingDuration] = useState(0);
+    const [mediaRecorder, setMediaRecorder] = useState(null);
+    const [audioChunks, setAudioChunks] = useState([]);
+    const recordingIntervalRef = useRef(null);
+    const messagesEndRef = useRef(null);
+
+    const user = JSON.parse(localStorage.getItem('alzheimer_user') || '{}');
+    const currentUserId = user.id;
+
+    useEffect(() => {
+        if (!receiverId || !currentUserId) return;
+        fetchReceiverProfile();
+        fetchMessages();
+
+        const channel = supabase
+            .channel(`private-chat-${[currentUserId, receiverId].sort().join('-')}`)
+            .on('postgres_changes',
+                { 
+                    event: 'INSERT', 
+                    schema: 'public', 
+                    table: 'private_messages',
+                    filter: `sender_id=eq.${receiverId},receiver_id=eq.${currentUserId}`
+                },
+                (payload) => handleNewMessage(payload.new)
+            )
+            .on('postgres_changes',
+                { 
+                    event: 'INSERT', 
+                    schema: 'public', 
+                    table: 'private_messages',
+                    filter: `sender_id=eq.${currentUserId},receiver_id=eq.${receiverId}`
+                },
+                (payload) => handleNewMessage(payload.new)
+            )
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, [receiverId, currentUserId]);
+
+    const handleNewMessage = (msg) => {
+        setMessages(prev => {
+            if (prev.find(m => m.id === msg.id)) return prev;
+            return [...prev, {
+                id: msg.id,
+                text: msg.content,
+                type: msg.type || 'text',
+                sender: msg.sender_id === currentUserId ? 'me' : 'other',
+                time: new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+            }];
+        });
+        setTimeout(scrollToBottom, 50);
+    };
+
+    const getSupportedMimeType = () => {
+        const types = [
+            'audio/webm;codecs=opus',
+            'audio/webm',
+            'audio/mp4',
+            'audio/aac',
+            'audio/mpeg',
+            'audio/wav'
+        ];
+        for (const type of types) {
+            try {
+                if (MediaRecorder.isTypeSupported(type)) return type;
+            } catch (e) {}
+        }
+        return ''; // Lascia decidere al browser
+    };
+
+    const getExtension = (mimeType) => {
+        if (!mimeType) return 'mp4'; // Default sicuro
+        if (mimeType.includes('mp4') || mimeType.includes('aac')) return 'mp4';
+        if (mimeType.includes('ogg')) return 'ogg';
+        if (mimeType.includes('wav')) return 'wav';
+        if (mimeType.includes('webm')) return 'webm';
+        return 'mp4';
+    };
+
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mimeType = getSupportedMimeType();
+            
+            let recorder;
+            try {
+                const options = mimeType ? { mimeType } : {};
+                recorder = new MediaRecorder(stream, options);
+                console.log("MediaRecorder avviato con formato:", recorder.mimeType || "default");
+            } catch (e) {
+                console.warn("MimeType non supportato, uso default del browser");
+                recorder = new MediaRecorder(stream);
+            }
+            
+            const chunks = [];
+
+            recorder.ondataavailable = (e) => {
+                if (e.data.size > 0) chunks.push(e.data);
+            };
+
+            recorder.onstop = async () => {
+                const actualMimeType = recorder.mimeType || mimeType || 'audio/mp4';
+                const extension = getExtension(actualMimeType);
+                const audioBlob = new Blob(chunks, { type: actualMimeType });
+                await sendAudioMessage(audioBlob, extension);
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            setAudioChunks(chunks);
+            setMediaRecorder(recorder);
+            recorder.start();
+            setIsRecording(true);
+            setRecordingDuration(0);
+            recordingIntervalRef.current = setInterval(() => {
+                setRecordingDuration(prev => prev + 1);
+            }, 1000);
+        } catch (err) {
+            console.error("Errore registrazione:", err);
+            // Invia l'errore al debug console log
+            const errorLog = {
+                message: "Errore Mic: " + (err.message || err.toString()),
+                time: new Date().toLocaleTimeString(),
+                type: 'Codice'
+            };
+            const logs = JSON.parse(localStorage.getItem('debug_errors') || '[]');
+            logs.unshift(errorLog);
+            localStorage.setItem('debug_errors', JSON.stringify(logs.slice(0, 10)));
+            window.dispatchEvent(new CustomEvent('debug_error_added'));
+            
+            alert("Errore accesso microfono o formato non supportato.");
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorder && isRecording) {
+            mediaRecorder.stop();
+            setIsRecording(false);
+            clearInterval(recordingIntervalRef.current);
+        }
+    };
+
+    const sendAudioMessage = async (blob, extension) => {
+        const tempId = Date.now();
+        const fileName = `${currentUserId}/${tempId}.${extension}`;
+        
+        // Aggiunta ottimistica (placeholder)
+        setMessages(prev => [...prev, {
+            id: tempId,
+            text: '',
+            type: 'audio',
+            sender: 'me',
+            time: new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+            uploading: true
+        }]);
+        setTimeout(scrollToBottom, 50);
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('voice_messages')
+            .upload(fileName, blob);
+
+        if (uploadError) {
+            console.error("Errore upload audio:", uploadError);
+            setMessages(prev => prev.filter(m => m.id !== tempId));
+            alert("Errore caricamento audio. Assicurati di aver creato il bucket 'voice_messages' su Supabase.");
+            return;
+        }
+
+        const { data: urlData } = supabase.storage.from('voice_messages').getPublicUrl(fileName);
+        const audioUrl = urlData.publicUrl;
+
+        const { data: insertData } = await supabase.from('private_messages').insert([{
+            sender_id: currentUserId,
+            receiver_id: receiverId,
+            content: audioUrl,
+            type: 'audio'
+        }]).select();
+
+        if (insertData && insertData[0]) {
+            setMessages(prev => prev.map(m => m.id === tempId ? { 
+                ...m, 
+                id: insertData[0].id, 
+                text: audioUrl, 
+                uploading: false 
+            } : m));
+        }
+    };
+
+    const markMessagesAsRead = async () => {
+        try {
+            await supabase
+                .from('private_messages')
+                .update({ is_read: true })
+                .eq('sender_id', receiverId)
+                .eq('receiver_id', currentUserId)
+                .eq('is_read', false);
+        } catch (e) {
+            console.error("Error marking messages as read", e);
+        }
+    };
+
+    const fetchReceiverProfile = async () => {
+        const { data } = await supabase.from('profiles').select('*').eq('id', receiverId).single();
+        if (data) {
+            setReceiverProfile({
+                ...data,
+                photo_url: data.photo_url || data.photo || getSearchAvatarUrl(data),
+            });
+        }
+    };
+
+    const fetchMessages = async () => {
+        try {
+            const { data } = await supabase
+                .from('private_messages')
+                .select('*')
+                .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${currentUserId})`)
+                .order('created_at', { ascending: true });
+
+            let profile = receiverProfile;
+            if (!profile) {
+                const { data: profileData } = await supabase.from('profiles').select('*').eq('id', receiverId).single();
+                profile = profileData ? {
+                    ...profileData,
+                    photo_url: profileData.photo_url || profileData.photo || getSearchAvatarUrl(profileData),
+                } : null;
+                if (profile) setReceiverProfile(profile);
+            }
+
+            const merged = withMockPrivateMessages(data || [], currentUserId, profile, user);
+            const isMock = !(data?.length) && merged.length > 0;
+            setHasMockThread(isMock);
+            setMessages(merged.map((msg) => formatPrivateMessage(msg, currentUserId)));
+            if (!isMock) markMessagesAsRead();
+        } catch (e) {
+            console.error(e);
+        }
+        setLoading(false);
+    };
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        if (!loading) scrollToBottom();
+    }, [messages, loading]);
+
+    const handleSend = async () => {
+        if (!inputText.trim()) return;
+        const textToSend = inputText;
+        setInputText("");
+        setTimeout(scrollToBottom, 50);
+
+        if (hasMockThread) {
+            setMessages((prev) => appendLocalPrivateMessage(prev, currentUserId, receiverId, textToSend));
+            return;
+        }
+
+        const tempId = Date.now();
+        const newMessage = {
+            id: tempId,
+            text: textToSend,
+            type: 'text',
+            sender: 'me',
+            time: new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+            sending: true
+        };
+
+        setMessages(prev => [...prev, newMessage]);
+
+        const { error, data } = await supabase.from('private_messages').insert([{
+            content: textToSend,
+            sender_id: currentUserId,
+            receiver_id: receiverId
+        }]).select();
+
+        if (error) {
+            setMessages(prev => prev.filter(m => m.id !== tempId));
+            setInputText(textToSend);
+            alert("Errore invio");
+        } else if (data && data[0]) {
+            setMessages(prev => prev.map(m => m.id === tempId ? { ...m, id: data[0].id, sending: false } : m));
+        }
+    };
+
+    const styles = {
+        container: {
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: 'var(--color-bg-primary)',
+            overflow: 'hidden',
+        },
+        header: {
+            padding: '12px 16px',
+            backgroundColor: 'white',
+            borderBottom: '1px solid var(--color-border)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            zIndex: 10,
+            cursor: 'pointer',
+        },
+        avatar: {
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            backgroundColor: 'var(--color-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            fontWeight: 'bold',
+            overflow: 'hidden',
+        },
+        messageList: {
+            flex: 1,
+            overflowY: 'auto',
+            padding: '20px 16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+        },
+        bubble: (sender) => ({
+            maxWidth: '80%',
+            padding: '10px 14px',
+            borderRadius: '18px',
+            backgroundColor: sender === 'me' ? 'var(--color-primary)' : 'white',
+            color: sender === 'me' ? 'var(--color-on-primary)' : 'var(--color-text-primary)',
+            alignSelf: sender === 'me' ? 'flex-end' : 'flex-start',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+            borderBottomRightRadius: sender === 'me' ? '4px' : '18px',
+            borderBottomLeftRadius: sender === 'me' ? '18px' : '4px',
+        }),
+        messageText: {
+            margin: 0,
+            fontSize: '0.9375rem',
+            lineHeight: '1.4',
+        },
+        messageTime: {
+            fontSize: '0.625rem',
+            opacity: 0.7,
+            textAlign: 'right',
+            marginTop: '4px',
+        },
+        inputArea: {
+            padding: '12px 16px',
+            paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
+            backgroundColor: 'white',
+            borderTop: '1px solid var(--color-border)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            position: 'sticky',
+            bottom: 0,
+            zIndex: 100,
+        },
+        input: {
+            flex: 1,
+            padding: '10px 16px',
+            borderRadius: '20px',
+            border: '1px solid #E5E7EB',
+            fontSize: '0.9375rem',
+            outline: 'none',
+            backgroundColor: '#F9FAFB',
+        },
+        sendButton: {
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            backgroundColor: 'var(--color-primary)',
+            color: 'var(--color-on-primary)',
+            border: 'none',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            cursor: 'pointer',
+        }
+    };
+
+    if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Caricamento...</div>;
+
+    return (
+        <div style={styles.container}>
+            <div style={styles.header} onClick={() => navigate(`/profilo/${receiverId}`)}>
+                <button onClick={(e) => { e.stopPropagation(); navigate(-1); }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                    <AppIcon name="arrow-left" size={24} color="primary" />
+                </button>
+                <div style={styles.avatar}>
+                    {receiverProfile?.photo_url ? <img src={receiverProfile.photo_url} style={{width:'100%',height:'100%',objectFit:'cover'}} alt="P" /> : receiverProfile?.name?.[0]}
+                </div>
+                <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 'bold' }}>{formatFullName(receiverProfile)}</div>
+                    <div style={{ fontSize: '0.6875rem', color: receiverProfile?.last_active && (new Date() - new Date(receiverProfile.last_active)) < 60000 ? '#10b981' : '#9CA3AF' }}>
+                        {receiverProfile?.last_active && (new Date() - new Date(receiverProfile.last_active)) < 60000 
+                            ? 'Online' 
+                            : receiverProfile?.last_active 
+                                ? `Ultimo accesso: ${new Date(receiverProfile.last_active).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`
+                                : 'Offline'}
+                    </div>
+                </div>
+            </div>
+
+            <div style={styles.messageList}>
+                {messages.length === 0 && <div style={{ textAlign: 'center', color: '#9CA3AF', marginTop: '20px' }}>Inizia la conversazione con un messaggio!</div>}
+                {messages.map(msg => {
+                    const isAudio = msg.type === 'audio' || (typeof msg.text === 'string' && (msg.text.includes('.webm') || msg.text.includes('.mp4') || msg.text.includes('.m4a') || msg.text.includes('.wav')));
+                    return (
+                        <div key={msg.id} style={styles.bubble(msg.sender)}>
+                            {isAudio ? (
+                                <VoicePlayer 
+                                    url={msg.text} 
+                                    isMe={msg.sender === 'me'} 
+                                    userPhoto={msg.sender === 'me' ? user.photo : receiverProfile?.photo_url}
+                                    userName={msg.sender === 'me' ? user.name : receiverProfile?.name}
+                                />
+                            ) : (
+                                <p style={styles.messageText}>{msg.text}</p>
+                            )}
+                            <div style={styles.messageTime}>{msg.time}</div>
+                        </div>
+                    );
+                })}
+                <div ref={messagesEndRef} />
+            </div>
+
+            <div style={styles.inputArea}>
+                {isRecording ? (
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 15px', color: '#EF4444' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#EF4444' }} />
+                            <span>Registrazione... {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, '0')}</span>
+                        </div>
+                        <button onClick={stopRecording} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 'bold', cursor: 'pointer' }}>Invia</button>
+                    </div>
+                ) : (
+                    <>
+                        <input
+                            type="text"
+                            placeholder="Messaggio..."
+                            style={styles.input}
+                            value={inputText}
+                            onChange={e => setInputText(e.target.value)}
+                            onKeyPress={e => e.key === 'Enter' && handleSend()}
+                        />
+                        <button 
+                            onClick={startRecording} 
+                            style={{ background: 'none', border: 'none', padding: '10px', cursor: 'pointer' }}
+                            title="Registra vocale"
+                        >
+                            <AppIcon name="microphone" size={24} color="primary" />
+                        </button>
+                        <button style={styles.sendButton} onClick={handleSend} disabled={!inputText.trim()}>
+                            <AppIcon name="paper-plane" size={20} color="white" />
+                        </button>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default PrivateChatPage;

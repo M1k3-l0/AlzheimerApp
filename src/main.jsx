@@ -20,10 +20,16 @@ try {
         </React.StrictMode>,
     );
 } catch (error) {
-    document.body.innerHTML = `
-        <div style="padding: 20px; color: red; font-family: sans-serif;">
-            <h1 style="font-size: 20px;">Errore Avvio App</h1>
-            <p style="font-size: 14px;">${error.message}</p>
-        </div>
-    `;
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'padding: 20px; color: red; font-family: sans-serif;';
+    const h1 = document.createElement('h1');
+    h1.style.fontSize = '20px';
+    h1.textContent = 'Errore Avvio App';
+    const p = document.createElement('p');
+    p.style.fontSize = '14px';
+    p.textContent = error?.message || 'Errore sconosciuto';
+    wrap.appendChild(h1);
+    wrap.appendChild(p);
+    document.body.textContent = '';
+    document.body.appendChild(wrap);
 }

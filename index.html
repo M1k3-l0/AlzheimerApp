@@ -6,7 +6,7 @@
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <link rel="apple-touch-icon" href="/logo.svg" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
@@ -23,7 +23,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Memora</title>
     <script>
-      window.onerror = function(msg, url, line, col, error) {
+      window.onerror = function(msg, url, line) {
         var div = document.createElement('div');
         div.style.color = 'red';
         div.style.position = 'fixed';
@@ -32,14 +32,19 @@
         div.style.backgroundColor = 'white';
         div.style.zIndex = '99999';
         div.style.padding = '20px';
-        div.innerHTML = '<h3>Errore Globale:</h3>' + msg + '<br>URL: ' + url + '<br>Linea: ' + line;
+        var title = document.createElement('h3');
+        title.textContent = 'Errore Globale:';
+        div.appendChild(title);
+        var body = document.createElement('p');
+        body.textContent = String(msg) + ' | URL: ' + String(url) + ' | Linea: ' + String(line);
+        div.appendChild(body);
         document.body.appendChild(div);
       };
     </script>
   </head>
     <body style="margin: 0; padding: 0; background-color: white;">
     <div id="root" style="width:100%;height:100%;min-height:100dvh;display:flex;flex-direction:column;align-items:stretch;">
-      <div style="flex:1;display:flex;align-items:center;justify-content:center;font-family:sans-serif;color:#92487A;font-weight:bold;font-size:20px;text-align:center;padding:20px;">CARICAMENTO MEMORA...</div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;font-family:sans-serif;color:#9C69A7;font-weight:bold;font-size:20px;text-align:center;padding:20px;">CARICAMENTO MEMORA...</div>
     </div>
     
     <script>
@@ -47,10 +52,19 @@
       setTimeout(function() {
         var root = document.getElementById('root');
         if (root && root.innerHTML.indexOf('CARICAMENTO') !== -1) {
-          root.innerHTML = '<div style="color:#E67E22;">' +
-            '<h3 style="margin-bottom:10px;">L\'app sta impiegando troppo tempo...</h3>' +
-            '<p style="font-size:14px; color:#666;">Controlla la tua connessione internet o prova a chiudere e riaprire l\'app.</p>' +
-            '</div>';
+          root.textContent = '';
+          var wrap = document.createElement('div');
+          wrap.style.color = '#E67E22';
+          var h3 = document.createElement('h3');
+          h3.style.marginBottom = '10px';
+          h3.textContent = 'L\'app sta impiegando troppo tempo...';
+          var p = document.createElement('p');
+          p.style.fontSize = '14px';
+          p.style.color = '#666';
+          p.textContent = 'Controlla la tua connessione internet o prova a chiudere e riaprire l\'app.';
+          wrap.appendChild(h3);
+          wrap.appendChild(p);
+          root.appendChild(wrap);
         }
       }, 8000);
     </script>

@@ -25,8 +25,6 @@ const LoginPage = () => {
 
             if (error) throw error;
 
-            console.log("Login successo:", data);
-
             // Recupera il profilo per mantenere la compatibilità con il resto dell'app
             if (data.user) {
                 let { data: profile } = await supabase
@@ -37,7 +35,6 @@ const LoginPage = () => {
 
                 // SELF-HEALING: Se il profilo non esiste (trigger fallito?), crealo ora
                 if (!profile) {
-                    console.log("Profilo mancante, creazione fallback...");
                     const metadata = data.user.user_metadata || {};
                     const newProfile = {
                         id: data.user.id,
@@ -53,6 +50,14 @@ const LoginPage = () => {
                 }
 
                 if (profile) {
+                    // Controllo BAN
+                    if (profile.is_banned) {
+                        setError("Questo account è stato sospeso.");
+                        await supabase.auth.signOut();
+                        setLoading(false);
+                        return;
+                    }
+
                     localStorage.setItem('alzheimer_user', JSON.stringify({
                         id: profile.id,
                         name: profile.name,
@@ -100,11 +105,11 @@ const LoginPage = () => {
             boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
             border: '1px solid var(--color-border)'
         },
-        title: { fontSize: '26px', fontWeight: '800', marginBottom: '8px', color: 'var(--color-primary)' },
-        subtitle: { fontSize: '15px', color: '#666', marginBottom: '32px' },
+        title: { fontSize: '1.625rem', fontWeight: '800', marginBottom: '8px', color: 'var(--color-primary)' },
+        subtitle: { fontSize: '0.9375rem', color: '#666', marginBottom: '32px' },
         form: { display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' },
         inputGroup: { marginBottom: '5px' },
-        label: { display: 'block', fontSize: '13px', fontWeight: '600', color: '#444', marginBottom: '6px', marginLeft: '4px' },
+        label: { display: 'block', fontSize: '0.8125rem', fontWeight: '600', color: '#444', marginBottom: '6px', marginLeft: '4px' },
         inputWrapper: { position: 'relative', display: 'flex', alignItems: 'center' },
         icon: { position: 'absolute', left: '14px', color: '#999' },
         input: {
@@ -112,17 +117,17 @@ const LoginPage = () => {
             padding: '14px 14px 14px 44px',
             borderRadius: '12px',
             border: '1px solid #ddd',
-            fontSize: '16px',
+            fontSize: '1rem',
             outline: 'none',
             backgroundColor: '#f9f9f9',
             transition: 'border-color 0.2s'
         },
         button: {
             padding: '16px',
-            fontSize: '17px',
+            fontSize: '1.0625rem',
             fontWeight: 'bold',
             backgroundColor: 'var(--color-primary)',
-            color: 'white',
+            color: 'var(--color-on-primary)',
             border: 'none',
             borderRadius: '12px',
             cursor: loading ? 'wait' : 'pointer',
@@ -133,7 +138,7 @@ const LoginPage = () => {
         },
         errorBox: {
             backgroundColor: '#FFF0F0', color: '#D32F2F', padding: '12px', borderRadius: '8px', 
-            fontSize: '14px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px'
+            fontSize: '0.875rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px'
         }
     };
 
@@ -177,12 +182,12 @@ const LoginPage = () => {
                         </div>
                     </div>
 
-                    <button type="submit" style={styles.button} disabled={loading}>
+                    <button type="submit" className="btn-primary" style={styles.button} disabled={loading}>
                         {loading ? 'Acceso in corso...' : 'Accedi'}
                     </button>
                 </form>
 
-                <div style={{marginTop: '25px', fontSize:'14px', color:'#666', borderTop:'1px solid #eee', paddingTop:'20px'}}>
+                <div style={{marginTop: '25px', fontSize: '0.875rem', color:'#666', borderTop:'1px solid #eee', paddingTop:'20px'}}>
                     Non hai un account? <br/>
                     <Link to="/signup" style={{color:'var(--color-primary)', fontWeight:'bold', textDecoration:'none', display:'inline-block', marginTop:'5px'}}>
                         Crea un nuovo account
@@ -190,9 +195,9 @@ const LoginPage = () => {
                 </div>
             </div>
 
-            <div style={{ marginTop: '40px', fontSize: '11px', color: '#999', lineHeight: '1.4' }}>
-                Creato da <strong>Daniele Spalletti</strong> e <strong>Michele Mosca</strong><br />
-                di <a href="https://www.cosmonet.info" target="_blank" style={{color: '#999'}}>cosmonet.info</a>
+            <div style={{ marginTop: '40px', textAlign: 'center', fontSize: '0.6875rem', color: '#999', lineHeight: '1.4' }}>
+                Memora x Airalzh © 2026<br />
+                Michele Mosca e Daniele Spalletti
             </div>
         </div>
     );

@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import AppIcon from './AppIcon';
+import { MOOD_COLORS } from '../utils/moodHistory';
 
 /** Colori faccine in ordine: verde, giallo, rosso (alto contrasto) */
 const MOOD_ACTIVE_COLORS = {
-  happy: '#16a34a',
-  neutral: '#ca8a04',
-  sad: '#dc2626',
+  happy: MOOD_COLORS.happy,
+  neutral: MOOD_COLORS.neutral,
+  sad: MOOD_COLORS.sad,
 };
 /** Colore faccine non selezionate: grigio visibile su sfondo chiaro */
 const MOOD_INACTIVE_COLOR = '#64748b';
@@ -65,16 +66,16 @@ const MoodTracker = ({ userRole, mood, setMood, moodToast, reduceMotion = false 
       minWidth: 0,
       boxSizing: 'border-box',
     },
-    title: { fontWeight: 'bold', fontSize: '18px', color: 'var(--color-primary-dark)' },
+    title: { fontWeight: 'bold', fontSize: '1.125rem', color: 'var(--color-primary-dark)' },
     lastMood: {
-      fontSize: '15px',
+      fontSize: '0.9375rem',
       fontWeight: '600',
       color: 'var(--color-primary)',
       marginTop: '12px',
       marginBottom: '4px',
     },
-    toast: { fontSize: '13px', color: 'var(--color-primary)', fontWeight: '600', marginTop: '8px', display: 'block' },
-    hint: { fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '8px' },
+    toast: { fontSize: '0.8125rem', color: 'var(--color-primary)', fontWeight: '600', marginTop: '8px', display: 'block' },
+    hint: { fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '8px' },
   };
 
   return (

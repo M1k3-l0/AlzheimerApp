@@ -4,26 +4,34 @@
 
 :root {
   /* Root font size: Caratteri Grandi aumenta html a 21px (16 + ~30%) */
-  --base-font-size: 16px;
+  --base-font-size: 1rem;
   --base-size: 16px;
   --safe-padding: 5px;
 
-  /* Memora – Color palette */
-  --color-primary: #92487A;
-  --color-primary-dark: #6d3560;
-  --color-primary-soft: #FFC4C4;
-  --color-accent: #EE6983;
+  /* Memora – Airalzh brand palette (airalzh.it) */
+  --color-primary: #9C69A7;
+  --color-primary-dark: #4A304F;
+  --color-primary-soft: #D4C4E0;
+  --color-accent: #A88ABE;
   
-  --color-bg-primary: #FFF0F2;
-  --color-bg-secondary: #FFE0E2;
+  --color-bg-primary: #F7F3FA;
+  --color-bg-secondary: #EDE6F3;
+  /* Rosa header / top bar (app-header) */
+  --color-header-bg: #FFF0F2;
   
-  --color-text-primary: #1F2937;
-  --color-text-secondary: #6B7280;
+  --color-text-primary: #3F2843;
+  --color-text-secondary: #655372;
   
-  --color-success: #92487A;
-  --color-error: #EE6983;
-  --color-border: rgba(146, 72, 122, 0.2);
-  --theme-vibrant: #92487A;
+  --color-success: #9C69A7;
+  --color-error: #DC2626;
+  --color-border: rgba(74, 48, 79, 0.2);
+  --color-on-primary: #FFFFFF;
+  --theme-vibrant: #9C69A7;
+
+  /* Umore: toni distintivi, armonizzati col brand */
+  --mood-happy: #52A88E;
+  --mood-neutral: #C9920A;
+  --mood-sad: #DC4545;
 
 
   /* Spacing & Sizes */
@@ -42,12 +50,16 @@
   --card-radius-lg: 24px;
   --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
   /* Ombreggiatura esterna leggera per le card della home */
-  --card-shadow-outer: 0 4px 20px rgba(0, 0, 0, 0.07), 0 2px 10px rgba(146, 72, 122, 0.06);
+  --card-shadow-outer: 0 4px 20px rgba(0, 0, 0, 0.07), 0 2px 10px rgba(156, 105, 167, 0.06);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
-  --header-shadow: 0 1px 0 rgba(146, 72, 122, 0.06);
+  --header-shadow: 0 1px 0 rgba(156, 105, 167, 0.06);
   --section-gap: 24px;
   --chat-input-height: 72px;
+  /* Distanza dal fondo viewport al bordo inferiore del composer (vedi .input-outer-wrapper) */
+  --chat-composer-bottom: 90px;
+  /* Spazio sotto l'ultimo messaggio: composer + piccolo respiro */
+  --chat-messages-bottom-gap: calc(var(--chat-composer-bottom) + 56px + 10px + env(safe-area-inset-bottom, 0px));
   --font-memoriae: 'Plus Jakarta Sans', sans-serif;
 
   /* Layout uniforme per tutte le pagine: si allarga/stringe col viewport (come auth/agenda) */
@@ -68,10 +80,11 @@
 }
 
 .auth-header__logo {
-  width: 80px;
-  height: auto;
-  border-radius: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: 22px;
+  box-shadow: 0 6px 18px rgba(74, 48, 79, 0.22);
   margin-bottom: 12px;
 }
 
@@ -80,7 +93,7 @@
   font-family: 'Lexend', sans-serif !important;
   font-weight: 800;
   font-size: 2.2rem;
-  color: #6d3560;
+  color: var(--color-primary-dark);
   letter-spacing: -0.02em;
   text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.05);
   margin: 0;
@@ -134,11 +147,12 @@ html {
   height: 100%;
   overflow-x: hidden;
   max-width: 100vw;
+  scroll-behavior: smooth;
 }
 
 /* Caratteri Grandi: aumenta la radice ~30% così tutti i rem si scalano */
 html.large-font-mode {
-  --base-font-size: 21px;
+  --base-font-size: 1.3125rem;
   --base-size: 21px;
 }
 
@@ -168,15 +182,32 @@ body {
 input,
 button {
   font-family: 'Plus Jakarta Sans', sans-serif !important;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease;
+}
+
+button:active {
+  transform: scale(0.96);
+  opacity: 0.8;
 }
 
 /* Header: gerarchia visiva e profondità leggera (HIG) */
 .app-header {
   box-shadow: var(--header-shadow);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background-color: color-mix(in srgb, var(--color-header-bg) 85%, transparent) !important;
 }
 .app-header h1 {
   letter-spacing: -0.02em;
   font-weight: 700;
+}
+
+.app-header-profile,
+.app-header-search,
+.app-header-messages,
+.app-header-settings {
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 /* Root: niente scroll orizzontale, larghezza contenuta */
@@ -261,8 +292,11 @@ button {
 .main-content.full-page-fill {
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow: hidden !important;
+  height: calc(100dvh - var(--header-height));
+  max-height: calc(100dvh - var(--header-height));
 }
 
 .main-content.full-page-fill > div {
@@ -286,13 +320,16 @@ button {
   .chat-messages {
     flex: 1 1 auto !important;
     min-height: 0 !important;
-    height: calc(100vh - var(--header-height) - var(--chat-input-height) - var(--tab-bar-height) - env(safe-area-inset-bottom, 0px)) !important;
+    max-height: none !important;
+    height: auto !important;
     overflow-y: auto !important;
+    overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     padding-left: 8px !important;
     padding-right: 8px !important;
     padding-top: 24px !important;
-    padding-bottom: 12px !important;
+    padding-bottom: var(--chat-messages-bottom-gap) !important;
   }
 
   .chat-input-bar,
@@ -314,12 +351,16 @@ button {
 /* Chat Box Fix: container messaggi centrato, spazio per input fixed */
 .chat-messages-container {
   flex: 1;
+  min-height: 0;
   width: 100%;
   max-width: var(--page-max-width);
   margin: 0 auto;
   overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding-top: 20px;
-  padding-bottom: 80px;
+  padding-bottom: var(--chat-messages-bottom-gap);
 }
 
 /* Struttura chat: wrapper, header opzionale, area messaggi, input ancorato in fondo */
@@ -421,7 +462,7 @@ button {
   border-radius: 50px !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
   padding: 0.5rem 1rem !important;
-  border: 1px solid rgba(146, 72, 122, 0.08);
+  border: 1px solid rgba(156, 105, 167, 0.08);
   pointer-events: auto !important;
 }
 
@@ -445,20 +486,20 @@ button {
   height: 2.75rem;
   border-radius: 50%;
   background-color: var(--color-primary);
-  color: white;
+  color: var(--color-on-primary);
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(146, 72, 122, 0.25);
+  box-shadow: 0 2px 8px rgba(156, 105, 167, 0.25);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .send-button-circle:hover {
   transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(146, 72, 122, 0.35);
+  box-shadow: 0 4px 12px rgba(156, 105, 167, 0.35);
 }
 
 .send-button-circle:active {
@@ -496,6 +537,14 @@ button {
     right: var(--content-gap) !important;
   }
 
+  .app-header-messages {
+    right: calc(var(--content-gap) + 2.5rem) !important;
+  }
+
+  .app-header-search {
+    right: calc(var(--content-gap) + 5rem) !important;
+  }
+
   /* Main: stesso layout fluido di auth/agenda (--page-max-width, padding uniforme) */
   .main-content {
     padding-left: var(--page-padding-x);
@@ -515,7 +564,7 @@ button {
   /* Unica variabile per spazio orizzontale così dx e sx sono identici */
   .app-container {
     --content-padding-x: var(--desktop-gutter);
-    font-size: 25px; /* +5pt circa (18px + ~7px) per migliore leggibilità desktop */
+    font-size: 1.5625rem; /* +5pt circa (18px + ~7px) per migliore leggibilità desktop */
     box-sizing: border-box !important;
     width: calc(100vw - var(--sidebar-width)) !important;
     padding-left: var(--desktop-gutter) !important;
@@ -533,6 +582,14 @@ button {
 
   .app-header-settings {
     right: var(--desktop-gutter) !important;
+  }
+
+  .app-header-messages {
+    right: calc(var(--desktop-gutter) + 2.5rem) !important;
+  }
+
+  .app-header-search {
+    right: calc(var(--desktop-gutter) + 5rem) !important;
   }
 
   .app-container .main-content {
@@ -591,14 +648,13 @@ button {
     padding: 0 var(--desktop-gutter) !important;
   }
 
-  /* Chat desktop: più spazio sopra i messaggi, meno sotto (bilanciato) */
+  /* Chat desktop: composer più basso */
   .chat-messages-container {
     padding-top: 24px !important;
-    padding-bottom: 24px !important;
+    padding-bottom: var(--chat-messages-bottom-gap) !important;
   }
   .chat-page-wrapper .messages-scroller {
     padding-top: 12px !important;
-    padding-bottom: 12px !important;
   }
 
   .chat-input-bar {
@@ -612,6 +668,11 @@ button {
 }
 
 @media screen and (min-width: 769px) {
+  :root {
+    --chat-composer-bottom: 70px;
+    --chat-messages-bottom-gap: calc(var(--chat-composer-bottom) + 56px + 10px + env(safe-area-inset-bottom, 0px));
+  }
+
   .last-scroll-block {
     padding-bottom: 0 !important;
   }
@@ -631,7 +692,7 @@ button {
 
   /* Padding-top obbligatorio così lo scroll non fa passare il contenuto sotto l'header */
   .main-content {
-    padding-top: var(--header-height) !important;
+    padding-top: calc(var(--header-height) + 16px) !important;
     padding-bottom: 0;
     padding-left: var(--page-padding-x-mobile);
     padding-right: var(--page-padding-x-mobile);
@@ -645,6 +706,13 @@ button {
   .main-content.full-page-fill {
     padding-left: var(--page-padding-x-mobile) !important;
     padding-right: var(--page-padding-x-mobile) !important;
+  }
+
+  /* Solo chat di gruppo: main fisso, scroll interno ai messaggi */
+  .main-content.full-page-fill {
+    overflow: hidden !important;
+    height: calc(100dvh - var(--header-height)) !important;
+    max-height: calc(100dvh - var(--header-height)) !important;
   }
 
   /* Padding solo sull'ultimo elemento: niente scalino, scroll fino a superare la navbar */
@@ -681,6 +749,18 @@ button {
   border: none;
 }
 
+/* Bottoni pieni viola: testo sempre bianco */
+.btn-primary {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  border: none;
+}
+
+.btn-primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 /* Titolo Memoriae: stesso font dell'app, peso 700 per farlo risaltare */
 .memoriae-title {
   font-family: var(--font-memoriae);
@@ -705,7 +785,7 @@ button {
   background-color: var(--color-bg-secondary);
   border-radius: var(--card-radius);
   box-shadow: var(--card-shadow);
-  border: 1px solid rgba(146, 72, 122, 0.06);
+  border: 1px solid rgba(156, 105, 167, 0.06);
 }
 
 /* Home: unico blocco; mobile = colonna (Agenda, Stato, Pillola), desktop = sx Agenda, dx Stato+Pillola (stessa altezza) */
@@ -782,9 +862,20 @@ button {
   }
 }
 
-@media screen and (max-width: 1023px) {
-  .home-notification-desktop {
-    display: none !important;
+
+/* Stili specifici per la Pagina Guida */
+.page-guida {
+  background-color: var(--color-bg-primary);
+}
+
+.page-guida strong {
+  color: var(--color-primary-dark);
+}
+
+/* Fix per elementi che si "incastrano" sotto l'header su desktop */
+@media screen and (min-width: 1024px) {
+  .app-container .main-content {
+    padding-top: calc(var(--header-height) + 32px) !important;
   }
 }
 
@@ -895,7 +986,7 @@ button {
 
 /* Stato attivo: sx=verde, centro=giallo, dx=rosso */
 .mood-btn.active[data-mood="happy"] {
-  box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+  box-shadow: 0 0 15px rgba(82, 168, 142, 0.35);
 }
 
 .mood-btn.active[data-mood="neutral"] {
@@ -908,7 +999,7 @@ button {
 
 /* Focus su bottone attivo: non sovrascrivere l'ombra colore */
 .mood-btn.active:focus-visible {
-  box-shadow: 0 0 15px rgba(34, 197, 94, 0.3), 0 0 0 2px var(--color-primary);
+  box-shadow: 0 0 15px rgba(82, 168, 142, 0.35), 0 0 0 2px var(--color-primary);
 }
 
 .mood-btn.active[data-mood="neutral"]:focus-visible {
@@ -946,7 +1037,7 @@ button {
     min-width: 0;
   }
   .quote-text-responsive {
-    font-size: 14px !important;
+    font-size: 0.875rem !important;
     line-height: 1.5 !important;
     word-wrap: break-word;
     overflow-wrap: break-word;

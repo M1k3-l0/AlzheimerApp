@@ -12,7 +12,8 @@ const SignupPage = () => {
         surname: '',
         email: '',
         password: '',
-        role: 'caregiver' // Default
+        role: 'caregiver', // Default
+        patientEmail: '' // Per associazione
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -35,15 +36,36 @@ const SignupPage = () => {
                     data: {
                         name: formData.name,
                         surname: formData.surname,
-                        role: formData.role
-                    }
+                        role: formData.role,
+                        patient_email: formData.role === 'caregiver' ? formData.patientEmail : null
+                    },
+                    emailRedirectTo: (import.meta.env.VITE_SITE_URL || window.location.origin) + '/#/'
                 }
             });
 
             if (signUpError) throw signUpError;
 
             if (data.user) {
-                alert("Registrazione completata! Ora puoi accedere.");
+                // Se è un caregiver e ha inserito una mail paziente, prova l'associazione
+                if (formData.role === 'caregiver' && formData.patientEmail) {
+                    try {
+                        const { data: patient } = await supabase
+                            .from('profiles')
+                            .select('id')
+                            .eq('email', formData.patientEmail)
+                            .single();
+                        
+                        if (patient) {
+                            await supabase.from('follows').insert([{
+                                follower_id: data.user.id,
+                                followed_id: patient.id
+                            }]);
+                        }
+                    } catch (e) {
+                        console.warn("Associazione automatica fallita, ma registrazione completata.");
+                    }
+                }
+                alert("Registrazione completata! Controlla la mail per confermare l'account.");
                 navigate('/login');
             }
 
@@ -80,10 +102,10 @@ const SignupPage = () => {
             boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
             border: '1px solid var(--color-border)'
         },
-        title: { fontSize: '24px', fontWeight: '800', color: 'var(--color-primary)', marginBottom: '8px' },
-        subtitle: { fontSize: '14px', color: '#666', marginBottom: '24px' },
+        title: { fontSize: '1.5rem', fontWeight: '800', color: 'var(--color-primary)', marginBottom: '8px' },
+        subtitle: { fontSize: '0.875rem', color: '#666', marginBottom: '24px' },
         inputGroup: { marginBottom: '16px', textAlign: 'left' },
-        label: { display: 'block', fontSize: '13px', fontWeight: '600', color: '#444', marginBottom: '6px', marginLeft: '4px' },
+        label: { display: 'block', fontSize: '0.8125rem', fontWeight: '600', color: '#444', marginBottom: '6px', marginLeft: '4px' },
         inputWrapper: { position: 'relative', display: 'flex', alignItems: 'center' },
         icon: { position: 'absolute', left: '14px', color: '#999' },
         input: {
@@ -91,7 +113,7 @@ const SignupPage = () => {
             padding: '14px 14px 14px 44px',
             borderRadius: '12px',
             border: '1px solid #ddd',
-            fontSize: '16px',
+            fontSize: '1rem',
             outline: 'none',
             backgroundColor: '#f9f9f9',
             transition: 'border-color 0.2s'
@@ -100,10 +122,10 @@ const SignupPage = () => {
             width: '100%',
             padding: '16px',
             backgroundColor: 'var(--color-primary)',
-            color: 'white',
+            color: 'var(--color-on-primary)',
             border: 'none',
             borderRadius: '12px',
-            fontSize: '16px',
+            fontSize: '1rem',
             fontWeight: 'bold',
             cursor: loading ? 'wait' : 'pointer',
             marginTop: '10px',
@@ -119,7 +141,7 @@ const SignupPage = () => {
                 <p style={styles.subtitle}>Unisciti alla nostra community</p>
 
                 {error && (
-                    <div style={{backgroundColor:'#FFF0F0', color:'#D32F2F', padding:'12px', borderRadius:'8px', fontSize:'13px', marginBottom:'20px', display:'flex', alignItems:'center', gap:'8px'}}>
+                    <div style={{backgroundColor:'#FFF0F0', color:'#D32F2F', padding:'12px', borderRadius:'8px', fontSize: '0.8125rem', marginBottom:'20px', display:'flex', alignItems:'center', gap:'8px'}}>
                         <AlertCircle size={16}/> {error === 'User already registered' ? 'Utente già registrato.' : error}
                     </div>
                 )}
@@ -162,6 +184,26 @@ const SignupPage = () => {
                         </div>
                     </div>
 
+                    {formData.role === 'caregiver' && (
+                        <div style={styles.inputGroup}>
+                            <label style={styles.label}>Email del Paziente da assistere</label>
+                            <div style={styles.inputWrapper}>
+                                <AppIcon name="envelope" size={18} color="primary" style={styles.icon}/>
+                                <input 
+                                    name="patientEmail" 
+                                    type="email" 
+                                    style={styles.input} 
+                                    placeholder="paziente@email.com" 
+                                    onChange={handleChange} 
+                                    required 
+                                />
+                            </div>
+                            <p style={{fontSize: '0.6875rem', color: '#888', marginTop: '4px', marginLeft: '4px'}}>
+                                Inserisci l'email del paziente per associarti subito al suo profilo.
+                            </p>
+                        </div>
+                    )}
+
                     <div style={styles.inputGroup}>
                         <label style={styles.label}>Password</label>
                         <div style={styles.inputWrapper}>
@@ -170,19 +212,19 @@ const SignupPage = () => {
                         </div>
                     </div>
 
-                    <button type="submit" style={styles.button} disabled={loading}>
+                    <button type="submit" className="btn-primary" style={styles.button} disabled={loading}>
                         {loading ? 'Creazione in corso...' : 'Registrati'}
                     </button>
                 </form>
 
-                <div style={{marginTop: '20px', fontSize:'14px', color:'#666'}}>
+                <div style={{marginTop: '20px', fontSize: '0.875rem', color:'#666'}}>
                     Hai già un account? <Link to="/login" style={{color:'var(--color-primary)', fontWeight:'bold', textDecoration:'none'}}>Accedi</Link>
                 </div>
             </div>
 
-            <div style={{ marginTop: '20px', fontSize: '11px', color: '#999', lineHeight: '1.4' }}>
-                Creato da <strong>Daniele Spalletti</strong> e <strong>Michele Mosca</strong><br />
-                di <a href="https://www.cosmonet.info" target="_blank" style={{color: '#999'}}>cosmonet.info</a>
+            <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '0.6875rem', color: '#999', lineHeight: '1.4' }}>
+                Memora x Airalzh © 2026<br />
+                Michele Mosca e Daniele Spalletti
             </div>
         </div>
     );

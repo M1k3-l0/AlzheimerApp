@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  LogOut,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import AppIcon from "../components/AppIcon";
 import { supabase } from "../supabaseClient";
+import { isDev } from '../utils/dev';
+import { dialPhoneNumber } from '../utils/phone';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -25,6 +26,9 @@ const SettingsPage = () => {
   const [sosNumber, setSosNumber] = useState(() => localStorage.getItem("setting_sosNumber") || "");
   const [isEditingSos, setIsEditingSos] = useState(false);
   const [tempSos, setTempSos] = useState(sosNumber);
+
+  const effectiveRole = (isDev && localStorage.getItem('simulated_role')) || user?.role;
+  const isPatient = effectiveRole === 'patient';
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -100,13 +104,6 @@ const SettingsPage = () => {
     else document.documentElement.classList.remove("large-font-mode");
   }, [isLargeFont]);
 
-  const handleLogout = () => {
-    if (window.confirm("Disconnettere l'account?")) {
-      localStorage.removeItem("alzheimer_user");
-      window.location.href = "/login";
-    }
-  };
-
   const handlePhotoChange = async (e) => {
     const file = e.target?.files?.[0];
     if (!file || !file.type.startsWith("image/")) return;
@@ -144,20 +141,20 @@ const SettingsPage = () => {
     container: { backgroundColor: "var(--color-bg-primary)", minHeight: "100%", padding: "var(--content-padding-x)", paddingBottom: "120px", width: "100%", maxWidth: "100%", minWidth: 0, boxSizing: "border-box", overflowX: "hidden" },
     header: { display: "flex", alignItems: "center", marginBottom: "var(--section-gap)", gap: "12px" },
     backBtn: { padding: "8px", background: "white", borderRadius: "50%", color: "var(--color-primary-dark)", border: "none", boxShadow: "var(--card-shadow)" },
-    pageTitle: { fontSize: "24px", fontWeight: "800", color: "var(--color-primary-dark)", margin: 0 },
+    pageTitle: { fontSize: '1.5rem', fontWeight: "800", color: "var(--color-primary-dark)", margin: 0 },
     profileSection: { backgroundColor: "white", borderRadius: "var(--card-radius)", padding: "var(--content-padding-y)", display: "flex", alignItems: "center", gap: "16px", marginBottom: "var(--section-gap)", border: "1px solid var(--color-border)", boxShadow: "var(--card-shadow)" },
     avatarWrap: { position: "relative", background: "none", border: "none", padding: 0, cursor: "pointer", display: "block", flexShrink: 0 },
-    avatar: { width: "60px", height: "60px", borderRadius: "50%", backgroundColor: "var(--color-primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", overflow: "hidden" },
-    avatarOverlay: { position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", color: "white", fontSize: "10px", padding: "2px", display: "flex", alignItems: "center", justifyContent: "center", gap: "2px", borderBottomLeftRadius: "50%", borderBottomRightRadius: "50%" },
-    sectionLabel: { fontSize: "13px", fontWeight: "700", color: "var(--color-primary-dark)", textTransform: "uppercase", margin: "0 0 8px 12px", opacity: 0.7 },
+    avatar: { width: "3.75rem", height: "3.75rem", borderRadius: "50%", backgroundColor: "var(--color-primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", overflow: "hidden" },
+    avatarOverlay: { position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", color: "white", fontSize: '0.625rem', padding: "2px", display: "flex", alignItems: "center", justifyContent: "center", gap: "2px", borderBottomLeftRadius: "50%", borderBottomRightRadius: "50%" },
+    sectionLabel: { fontSize: '0.8125rem', fontWeight: "700", color: "var(--color-primary-dark)", textTransform: "uppercase", margin: "0 0 8px 12px", opacity: 0.7 },
     menuCard: { backgroundColor: "white", borderRadius: "var(--card-radius)", overflow: "hidden", marginBottom: "var(--section-gap)", border: "1px solid var(--color-border)", boxShadow: "var(--card-shadow)", maxWidth: "100%", boxSizing: "border-box" },
     menuItem: { display: "flex", alignItems: "center", padding: "16px", borderBottom: "1px solid var(--color-bg-primary)", cursor: "pointer", justifyContent: "space-between", background: "none", width: "100%", textAlign: "left", border: "none" },
     iconWrapper: (color) => ({ width: "36px", height: "36px", borderRadius: "10px", backgroundColor: color, display: "flex", alignItems: "center", justifyContent: "center", color: "white", marginRight: "12px" }),
-    itemLabel: { fontSize: "17px", fontWeight: "600", color: "var(--color-text-primary)" },
+    itemLabel: { fontSize: '1.0625rem', fontWeight: "600", color: "var(--color-text-primary)" },
     switch: (isOn) => ({ width: "51px", height: "31px", backgroundColor: isOn ? "--color-success" : "#E9E9EA", borderRadius: "16px", position: "relative" }), // Using color variables or defaults
     modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
     modal: { backgroundColor: 'white', borderRadius: 'var(--card-radius-lg)', padding: 'var(--content-padding-y)', width: '90%', maxWidth: '400px', boxShadow: 'var(--card-shadow)' },
-    primaryBtn: { width: '100%', padding: '16px', backgroundColor: 'var(--color-primary)', color: 'white', borderRadius: '14px', fontSize: '18px', fontWeight: 'bold' }
+    primaryBtn: { width: '100%', padding: '16px', backgroundColor: 'var(--color-primary)', color: 'var(--color-on-primary)', borderRadius: '14px', fontSize: '1.125rem', fontWeight: 'bold' }
   };
 
   return (
@@ -171,7 +168,7 @@ const SettingsPage = () => {
         <input type="file" ref={fileInputRef} accept="image/*" onChange={handlePhotoChange} hidden />
         <button type="button" style={styles.avatarWrap} onClick={() => fileInputRef.current?.click()} disabled={uploadingPhoto} aria-label="Cambia foto profilo">
           <div style={styles.avatar}>
-            {user.photo ? <img src={user.photo} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="Profilo" /> : <AppIcon name="user" size={30} color="white" />}
+            {user.photo && typeof user.photo === 'string' && user.photo.startsWith('http') ? <img src={user.photo} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="Profilo" /> : <AppIcon name="user" size={30} color="white" />}
           </div>
           <span style={styles.avatarOverlay}>
             <AppIcon name="camera" size={14} color="white" />
@@ -179,8 +176,8 @@ const SettingsPage = () => {
           </span>
         </button>
         <div>
-            <h2 style={{ fontSize: "18px", margin: 0, fontWeight: '700', color: 'var(--color-primary-dark)' }}>{user.name} {user.surname}</h2>
-            <p style={{ color: "var(--color-primary)", margin: 0, fontSize: "14px", fontWeight: '500' }}>Account Caregiver</p>
+            <h2 style={{ fontSize: '1.125rem', margin: 0, fontWeight: '700', color: 'var(--color-primary-dark)' }}>{user.name} {user.surname}</h2>
+            <p style={{ color: "var(--color-primary)", margin: 0, fontSize: '0.875rem', fontWeight: '500' }}>Account Caregiver</p>
           </div>
       </div>
 
@@ -191,7 +188,7 @@ const SettingsPage = () => {
             <div style={styles.iconWrapper("var(--color-primary)")}><AppIcon name={notifications ? 'bell' : 'bell-slash'} size={18} color="white" /></div>
             <div>
               <span style={styles.itemLabel}>Notifiche Push</span>
-              <div style={{fontSize: '12px', color: '#888'}}>{notifications ? 'Attivate' : 'Clicca per attivare'}</div>
+              <div style={{fontSize: '0.75rem', color: '#888'}}>{notifications ? 'Attivate' : 'Clicca per attivare'}</div>
             </div>
           </div>
           <div style={{...styles.switch(notifications), backgroundColor: notifications ? 'var(--color-success)' : '#ddd'}}><div style={{width: 27, height: 27, background: 'white', borderRadius: '50%', position: 'absolute', top: 2, left: notifications ? 22 : 2, transition: '0.3s'}}/></div>
@@ -204,6 +201,45 @@ const SettingsPage = () => {
           </div>
           <div style={{...styles.switch(isLargeFont), backgroundColor: isLargeFont ? 'var(--color-success)' : '#ddd'}}><div style={{width: 27, height: 27, background: 'white', borderRadius: '50%', position: 'absolute', top: 2, left: isLargeFont ? 22 : 2, transition: '0.3s'}}/></div>
         </button>
+
+        <button style={styles.menuItem} onClick={() => navigate('/guida')}>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <div style={styles.iconWrapper("var(--color-primary)")}><AppIcon name="calendar-lines" size={18} color="white" /></div>
+            <span style={styles.itemLabel}>Guida all'Uso</span>
+          </div>
+          <ChevronRight size={20} color="#ccc" />
+        </button>
+      </div>
+
+      <h3 style={styles.sectionLabel}>Privacy e Dati</h3>
+      <div style={styles.menuCard}>
+        {user.role !== 'healthcare' && (
+        <button style={styles.menuItem} onClick={() => navigate('/analytics')}>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <div style={styles.iconWrapper("#6366F1")}><AppIcon name="brain" size={18} color="white" /></div>
+            <span style={styles.itemLabel}>Statistiche e Analisi</span>
+          </div>
+          <ChevronRight size={20} color="#ccc" />
+        </button>
+        )}
+
+        <button style={styles.menuItem} onClick={() => navigate('/ai-chat')}>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <div style={styles.iconWrapper("#10B981")}><AppIcon name="paper-plane" size={18} color="white" /></div>
+            <span style={styles.itemLabel}>Assistente AI</span>
+          </div>
+          <ChevronRight size={20} color="#ccc" />
+        </button>
+
+        {!isPatient && (
+        <button style={styles.menuItem} onClick={() => navigate('/profilo')}>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <div style={styles.iconWrapper("#F59E0B")}><AppIcon name="lock" size={18} color="white" /></div>
+            <span style={styles.itemLabel}>Impostazioni Privacy</span>
+          </div>
+          <ChevronRight size={20} color="#ccc" />
+        </button>
+        )}
       </div>
 
       {isDenied && (
@@ -212,10 +248,10 @@ const SettingsPage = () => {
             <AppIcon name="shield-exclamation" size={20} color="accent" />
             <span style={{ fontWeight: '700' }}>Notifiche Bloccate</span>
           </div>
-          <p style={{ fontSize: '14px', color: '#856404', margin: '0 0 12px 0', lineHeight: '1.4' }}>
+          <p style={{ fontSize: '0.875rem', color: '#856404', margin: '0 0 12px 0', lineHeight: '1.4' }}>
             Hai disattivato le notifiche per questa app. Ecco come riattivarle:
           </p>
-          <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '12px', fontSize: '13px' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '12px', fontSize: '0.8125rem' }}>
             {/iPad|iPhone|iPod/.test(navigator.userAgent) ? (
               <ol style={{ paddingLeft: '20px', margin: 0 }}>
                 <li>Vai nelle <b>Impostazioni</b> del tuo iPhone.</li>
@@ -237,18 +273,18 @@ const SettingsPage = () => {
 
       <h3 style={styles.sectionLabel}>Sicurezza</h3>
       <div style={styles.menuCard}>
-        <button style={styles.menuItem} onClick={() => { if(!sosNumber) setIsEditingSos(true); else window.location.href=`tel:${sosNumber}`; }}>
+        <button style={styles.menuItem} onClick={() => { if (!sosNumber) setIsEditingSos(true); else dialPhoneNumber(sosNumber); }}>
           <div style={{ display: "flex", alignItems: "center" }}>
             <div style={styles.iconWrapper("var(--color-accent)")}><AppIcon name="shield-exclamation" size={18} color="white" /></div>
             <div>
               <span style={styles.itemLabel}>Contatto SOS</span>
-              <div style={{fontSize: '12px', color: '#888'}}>{sosNumber ? `Chiama: ${sosNumber}` : 'Non impostato'}</div>
+              <div style={{fontSize: '0.75rem', color: '#888'}}>{sosNumber ? `Chiama: ${sosNumber}` : 'Non impostato'}</div>
             </div>
           </div>
           <ChevronRight size={20} color="#ccc" />
         </button>
 
-        <button style={{ ...styles.menuItem, borderBottom: "none" }} onClick={() => window.location.href="tel:02809767"}>
+        <button style={{ ...styles.menuItem, borderBottom: "none" }} onClick={() => dialPhoneNumber('02809767')}>
           <div style={{ display: "flex", alignItems: "center" }}>
             <div style={styles.iconWrapper("var(--color-success)")}><AppIcon name="shield-check" size={18} color="white" /></div>
             <span style={styles.itemLabel}>Pronto Alzheimer</span>
@@ -261,21 +297,17 @@ const SettingsPage = () => {
           <div style={styles.modalOverlay}>
               <div style={styles.modal}>
                   <h3 style={{ color: 'var(--color-primary-dark)', marginBottom: '8px' }}>Imposta numero SOS</h3>
-                  <p style={{ fontSize: '14px', color: '#666', marginBottom: '20px' }}>Il numero che potrai chiamare rapidamente in caso di bisogno.</p>
-                  <input style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #ddd', fontSize: '18px', marginBottom: '20px' }} type="tel" value={tempSos} onChange={(e)=>setTempSos(e.target.value)} placeholder="Esempio: 333..." />
+                  <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '20px' }}>Il numero che potrai chiamare rapidamente in caso di bisogno.</p>
+                  <input style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #ddd', fontSize: '1.125rem', marginBottom: '20px' }} type="tel" value={tempSos} onChange={(e)=>setTempSos(e.target.value)} placeholder="Esempio: 333..." />
                   <button style={styles.primaryBtn} onClick={() => { localStorage.setItem("setting_sosNumber", tempSos); setSosNumber(tempSos); setIsEditingSos(false); }}>Salva Numero</button>
                   <button style={{ width: '100%', padding: '14px', background: 'none', color: '#888', marginTop: '8px' }} onClick={() => setIsEditingSos(false)}>Annulla</button>
               </div>
           </div>
       )}
 
-      <button style={{ width: '100%', padding: '18px', background: 'white', color: 'var(--color-error)', borderRadius: '16px', fontWeight: 'bold', border: '1px solid var(--color-error)' }} onClick={handleLogout}>
-        Esci dall'Account
-      </button>
-
-      <div style={{ textAlign: "center", marginTop: "40px", color: "#888", fontSize: "12px", lineHeight: "1.6" }}>
+      <div style={{ textAlign: "center", marginTop: "40px", color: "#888", fontSize: '0.75rem', lineHeight: "1.6" }}>
         Memora x Airalzh &copy; 2026<br />
-        Sviluppato da <strong>Daniele Spalletti</strong> e <strong>Michele Mosca</strong> di <a href="https://www.cosmonet.info" target="_blank" style={{color: '#888', textDecoration: 'underline'}}>cosmonet.info</a>
+        Michele Mosca e Daniele Spalletti
       </div>
     </div>
   );

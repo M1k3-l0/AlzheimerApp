@@ -10,8 +10,23 @@ const ICON_NAMES = [
   'add', 'badge-check', 'bell', 'bell-slash', 'calendar-lines', 'camera', 'comments',
   'envelope', 'face-expressionless', 'grin', 'home', 'lock', 'paper-plane', 'phone-call',
   'picture', 'sad', 'settings', 'shield-check', 'shield-exclamation', 'shoe-prints', 'text',
-  'thumbs-up', 'trash', 'user', 'users-alt',
+  'thumbs-up', 'trash', 'user', 'users-alt', 'microphone', 'play', 'pause', 'arrow-left', 'angle-right', 'crown', 'pencil', 'search', 'filter', 'brain', 'chart-line'
 ];
+
+const INLINE_ICONS = {
+  microphone: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2c-1.66 0-3 1.34-3 3v5c0 1.66 1.34 3 3 3s3-1.34 3-5V5c0-1.66-1.34-3-3-3zM11 10V5c0-.55.45-1 1-1s1 .45 1 1v5c0 .55-.45 1-1 1s-1-.45-1-1zM19 10v1c0 3.53-2.61 6.43-6 6.92V21h-2v-3.08c-3.39-.49-6-3.39-6-6.92v-1h2v1c0 2.76 2.24 5 5 5s5-2.24 5-5v-1h2z'/%3E%3C/svg%3E",
+  play: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E",
+  pause: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 19h4V5H6v14zm8-14v14h4V5h-4z'/%3E%3C/svg%3E",
+  'arrow-left': "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z'/%3E%3C/svg%3E",
+  'angle-right': "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z'/%3E%3C/svg%3E",
+  'crown': "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z'/%3E%3C/svg%3E",
+  'pencil': "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E",
+  'search': "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E",
+  'filter': "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z'/%3E%3C/svg%3E",
+  'chart-line': "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99l1.5 1.5z'/%3E%3C/svg%3E",
+  'brain': "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M12 1.25a10.75 10.75 0 1 0 0 21.5 10.75 10.75 0 0 0 0-21.5zM11 6.75h2v5.75h-2V6.75zm0 7.75h2v2.25h-2v-2.25z'/%3E%3C/svg%3E",
+  'map-marker': "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z'/%3E%3C/svg%3E"
+};
 
 const COLOR_MAP = {
   primary: 'var(--color-primary)',
@@ -33,16 +48,17 @@ function resolveColor(color) {
 
 export default function AppIcon({ name, size = 24, color, className, style = {} }) {
   const safeName = ICON_NAMES.includes(name) ? name : 'home';
-  const src = `/new_icon/${safeName}.svg`;
+  const src = INLINE_ICONS[name] || `/new_icon/${safeName}.svg`;
   const bg = resolveColor(color);
+  
   const maskStyle = {
     display: 'inline-block',
     width: size,
     height: size,
     flexShrink: 0,
     backgroundColor: bg,
-    mask: `url(${src}) no-repeat center / contain`,
-    WebkitMask: `url(${src}) no-repeat center / contain`,
+    mask: `url("${src}") no-repeat center / contain`,
+    WebkitMask: `url("${src}") no-repeat center / contain`,
     ...style,
   };
   return <span className={className} style={maskStyle} role="img" aria-hidden />;

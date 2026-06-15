@@ -11,7 +11,7 @@ Ho già installato tutto il necessario nel progetto. Ora tocca a te creare il da
    - `VITE_SUPABASE_ANON_KEY` = la chiave **anon public** (lunga, inizia con `eyJ...`)
 2. **Supabase Dashboard → Authentication → URL Configuration**:
    - **Site URL**: per sviluppo metti `http://localhost:5173` (o l’URL da cui apri l’app)
-   - **Redirect URLs**: aggiungi `http://localhost:5173`, `http://localhost:5173/**` e, in produzione, il tuo dominio (es. `https://alzheimer-app.vercel.app/**`)
+   - **Redirect URLs**: aggiungi `http://localhost:5173`, `http://localhost:5173/**` e, in produzione, il tuo dominio (es. `https://alzheimerapp-chi.vercel.app/**`)
 3. Riavvia il server dopo aver modificato `.env`: `npm run dev`
 
 ---
@@ -64,12 +64,14 @@ Se hai già creato `messages` e `posts` a mano, lo script aggiunge le colonne ma
 3. **Redirect URLs**: aggiungi almeno:
    - `http://localhost:5173`
    - `http://localhost:5173/**`
-   (In produzione aggiungi anche il dominio Vercel, es. `https://alzheimer-app.vercel.app/**`.)
+   (In produzione aggiungi anche il dominio Vercel, es. `https://alzheimerapp-chi.vercel.app/**`.)
 
-## Passo 7: Riavvia il server
-```bash
-npm run dev
-```
+### Passo 8: Configura lo Storage (Foto Profilo)
+Per permettere il caricamento della foto profilo, devi creare un bucket pubblico:
+
+1. In Supabase vai su **SQL Editor**.
+2. Esegui lo script **`sql_updates/storage_setup.sql`** (copia il contenuto, incollalo nell’editor e clicca **Run**).
+3. Questo creerà il bucket `avatars` e imposterà i permessi pubblici per la lettura e l'upload.
 
 ---
 
@@ -80,7 +82,27 @@ npm run dev
 | 2 | Copia URL e anon key in `.env` |
 | 3 | SQL Editor: esegui `setup_tables_complete.sql` |
 | 4 | SQL Editor: esegui `ENABLE_AUTH.sql` |
-| 5 | Authentication → URL Configuration (Site URL + Redirect URLs) |
-| 6 | `npm run dev` e prova Registrazione / Login |
+| 5 | SQL Editor: esegui `storage_setup.sql` (Storage Foto) |
+| 6 | Authentication → URL Configuration (Site URL + Redirect URLs) |
+| 7 | `npm run dev` e prova Registrazione / Login |
+| 8 | SQL Editor: esegui `storage_setup.sql` (Storage Foto) |
+| 9 | UptimeRobot: configura monitor porta 443 (Keep Alive) |
 
-✅ **Fatto!** Se la registrazione dà ancora "Failed to fetch", controlla la sezione in cima (URL Configuration e .env).
+---
+
+## Passo 9: Mantenere il database attivo (UptimeRobot)
+Supabase (piano gratuito) mette in pausa il database dopo 7 giorni di inattività. Per evitarlo, usa **UptimeRobot**:
+
+1. Crea un account su [UptimeRobot.com](https://uptimerobot.com).
+2. Clicca su **"+ Add New Monitor"**.
+3. **Monitor Type**: Seleziona **"Port"** (Importante: non usare HTTP/s).
+4. **Friendly Name**: `Supabase Keep Alive`
+5. **IP or Host**: `naqwhpgtawbsdhuogrgp.supabase.co` (senza https://)
+6. **Port**: `443`
+7. **Monitor Interval**: `5 minutes` (o quello che preferisci).
+8. Clicca **"Create Monitor"**.
+
+**Perché porta 443?**
+Monitorare l'URL con HTTP/s dà spesso errore **404** o **401** perché Supabase non ha una pagina web nella "root". Monitorando la porta **443**, verifichiamo che il server sia acceso e connesso, il che è sufficiente per tenerlo attivo.
+
+✅ **Fatto!** Ora il tuo database non andrà più in pausa.

@@ -15,7 +15,7 @@
         background-color: rgba(255, 255, 255, 0.88);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        border-top: 1px solid rgba(146, 72, 122, 0.08);
+        border-top: 1px solid rgba(156, 105, 167, 0.08);
         box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.04);
         display: flex;
         justify-content: space-around;
@@ -31,7 +31,7 @@
         bottom: 0;
         width: var(--sidebar-width);
         background-color: rgba(255, 255, 255, 0.94);
-        border-right: 1px solid rgba(146, 72, 122, 0.08);
+        border-right: 1px solid rgba(156, 105, 167, 0.08);
         box-shadow: 1px 0 0 rgba(0, 0, 0, 0.02);
         display: flex;
         flex-direction: column;
@@ -56,15 +56,34 @@
     min-width: 0;
 }
 
-.tab svg,
-.tab [role="img"] {
+.tabIconSlot {
+    position: relative;
     width: 1.5rem;
     height: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.tabIconSlot [role="img"] {
+    transform-origin: center center;
+}
+
+/* Icone piene (Analisi): tono intermedio — la forma piena altrimenti sembra troppo scura o troppo chiara */
+.active .tabIconFilled {
+    color: color-mix(in srgb, var(--color-primary) 35%, var(--color-primary-dark));
+}
+
+.tab svg,
+.tab [role="img"] {
+    width: 1.5rem !important;
+    height: 1.5rem !important;
 }
 
 @media screen and (min-width: 601px) {
     .tab:hover {
-        background-color: rgba(146, 72, 122, 0.06);
+        background-color: rgba(156, 105, 167, 0.06);
         color: var(--color-primary);
     }
 }
@@ -76,13 +95,14 @@
 
 @media screen and (min-width: 601px) {
     .active {
-        background-color: rgba(146, 72, 122, 0.08);
+        background-color: rgba(156, 105, 167, 0.08);
     }
 }
 
 @media screen and (max-width: 600px) {
     .tab {
         flex: 1;
+        padding: 0.3rem 0.1rem;
     }
 }
 

@@ -1,8 +1,16 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { getMoodHistory, getMoodColor } from '../utils/moodHistory';
-import { AlertTriangle, Activity, FileText, TrendingUp, XCircle } from 'lucide-react';
+import { formatFullName } from '../utils/avatarUtils';
+import {
+  withMockMoodHistory,
+  withMockTasks,
+  withMockLogs,
+  withMockNotes,
+} from '../utils/clinicalMockData';
+import { AlertTriangle, Activity, FileText, TrendingUp, XCircle, Plus, RotateCcw } from 'lucide-react';
 import AppIcon from './AppIcon';
+import { supabase } from '../supabaseClient';
 
 const MOOD_LABELS = { happy: 'Felice', neutral: 'Neutro', sad: 'Triste' };
 const NOTES_STORAGE_KEY = 'alzheimer_clinical_notes';
@@ -77,43 +85,96 @@ function saveClinicalNote(content, authorRole = 'healthcare') {
 }
 
 export default function ClinicalDashboard() {
-  const history = useMemo(() => getMoodHistory(), []);
+  const [patients, setPatients] = useState([]);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [history, setHistory] = useState([]);
   const [tasks, setTasks] = useState([]);
-  const [notes, setNotes] = useState(getClinicalNotes());
+  const [notes, setNotes] = useState([]);
+  const [logs, setLogs] = useState([]);
   const [newNote, setNewNote] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('alzheimer_tasks');
-    setTasks(saved ? JSON.parse(saved) : []);
+    if (!loading) {
+        const timer = setTimeout(() => setIsReady(true), 500);
+        return () => clearTimeout(timer);
+    }
+  }, [loading]);
+
+  const user = JSON.parse(localStorage.getItem('alzheimer_user') || '{}');
+
+  useEffect(() => {
+    fetchPatients();
   }, []);
 
-  const alertSadConsecutive = useMemo(() => hasConsecutiveSadDays(history), [history]);
-
-  const lineChartData = useMemo(() => {
-    const byDay = aggregateByDay(history);
-    const points = [];
-    const now = new Date();
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      const mood = prevalentMood(byDay[key]);
-      const score = mood === 'happy' ? 2 : mood === 'neutral' ? 1 : 0;
-      points.push({
-        date: d.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' }),
-        short: d.toLocaleDateString('it-IT', { weekday: 'narrow' }),
-        benessere: score,
-        mood,
-      });
+  useEffect(() => {
+    if (selectedPatient) {
+      fetchPatientData(selectedPatient.id);
     }
-    return points;
-  }, [history]);
+  }, [selectedPatient]);
 
-  const handleAddNote = () => {
-    if (!newNote.trim()) return;
-    saveClinicalNote(newNote);
-    setNotes(getClinicalNotes());
-    setNewNote('');
+  const fetchPatients = async () => {
+    const { data } = await supabase.from('profiles').select('*').eq('role', 'patient');
+    if (data) {
+      setPatients(data);
+      if (data.length > 0) setSelectedPatient(data[0]);
+    }
+    setLoading(false);
+  };
+
+  const fetchPatientData = async (patientId) => {
+    const patient = patients.find((p) => p.id === patientId) || selectedPatient;
+    const patientLabel = patient ? formatFullName(patient) : 'Il paziente';
+
+    const { data: moodData } = await supabase
+      .from('mood_history')
+      .select('*')
+      .eq('user_id', patientId)
+      .order('created_at', { ascending: true });
+
+    const dbHistory = moodData?.map((m) => ({ mood: m.mood, timestamp: m.created_at })) || [];
+    setHistory(withMockMoodHistory(patientId, dbHistory));
+
+    const { data: taskData } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', patientId)
+      .order('created_at', { ascending: false });
+
+    setTasks(withMockTasks(patientId, taskData || []));
+
+    const { data: logData } = await supabase
+      .from('activity_log')
+      .select('*')
+      .eq('user_id', patientId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    setLogs(withMockLogs(patientId, logData || []));
+
+    const { data: noteData } = await supabase
+      .from('clinical_notes')
+      .select('*')
+      .eq('patient_id', patientId)
+      .order('created_at', { ascending: false });
+
+    setNotes(withMockNotes(patientId, noteData || [], patientLabel));
+  };
+
+  const handleAddNote = async () => {
+    if (!newNote.trim() || !selectedPatient) return;
+    
+    const { data, error } = await supabase.from('clinical_notes').insert([{
+      patient_id: selectedPatient.id,
+      author_id: user.id,
+      content: newNote.trim()
+    }]).select();
+
+    if (!error && data) {
+      setNotes([data[0], ...notes]);
+      setNewNote('');
+    }
   };
 
   const styles = {
@@ -138,7 +199,7 @@ export default function ClinicalDashboard() {
       display: 'flex',
       alignItems: 'center',
       gap: '10px',
-      fontSize: '18px',
+      fontSize: '1.125rem',
       fontWeight: 'bold',
       marginBottom: '16px',
       color: '#1A1A1A',
@@ -155,7 +216,7 @@ export default function ClinicalDashboard() {
     table: {
       width: '100%',
       borderCollapse: 'collapse',
-      fontSize: '14px',
+      fontSize: '0.875rem',
     },
     th: {
       textAlign: 'left',
@@ -173,11 +234,11 @@ export default function ClinicalDashboard() {
       backgroundColor: '#F9FAFB',
       borderRadius: 'var(--card-radius)',
       marginBottom: '8px',
-      fontSize: '14px',
+      fontSize: '0.875rem',
       color: '#374151',
     },
     noteMeta: {
-      fontSize: '12px',
+      fontSize: '0.75rem',
       color: '#9CA3AF',
       marginTop: '6px',
     },
@@ -187,7 +248,7 @@ export default function ClinicalDashboard() {
       padding: '12px',
       borderRadius: 'var(--card-radius)',
       border: '1px solid #E5E7EB',
-      fontSize: '15px',
+      fontSize: '0.9375rem',
       boxSizing: 'border-box',
       resize: 'vertical',
     },
@@ -197,7 +258,7 @@ export default function ClinicalDashboard() {
       borderRadius: 'var(--card-radius)',
       border: 'none',
       backgroundColor: 'var(--color-primary)',
-      color: 'white',
+      color: 'var(--color-on-primary)',
       fontWeight: '600',
       cursor: 'pointer',
     },
@@ -205,12 +266,55 @@ export default function ClinicalDashboard() {
       textAlign: 'center',
       color: '#9CA3AF',
       padding: '20px',
-      fontSize: '14px',
+      fontSize: '0.875rem',
     },
   };
 
+  if (loading) return <div style={styles.empty}>Caricamento dati clinici...</div>;
+
+  const alertSadConsecutive = hasConsecutiveSadDays(history);
+
+  const lineChartData = (() => {
+    const byDay = aggregateByDay(history);
+    const points = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const mood = prevalentMood(byDay[key]);
+      const score = mood === 'happy' ? 2 : mood === 'neutral' ? 1 : 0;
+      points.push({
+        date: d.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' }),
+        short: d.toLocaleDateString('it-IT', { weekday: 'narrow' }),
+        benessere: score,
+        mood,
+      });
+    }
+    return points;
+  })();
+
   return (
     <div style={styles.container}>
+      {/* Selezione Paziente */}
+      <div style={styles.section}>
+        <div style={styles.card}>
+          <div style={styles.cardTitle}>
+            <Activity size={22} color="var(--color-primary)" />
+            <span>Monitoraggio Pazienti</span>
+          </div>
+          <select 
+            style={{ ...styles.textarea, minHeight: '45px', marginBottom: '10px' }}
+            value={selectedPatient?.id || ''}
+            onChange={(e) => setSelectedPatient(patients.find(p => p.id === e.target.value))}
+          >
+            {patients.map(p => (
+              <option key={p.id} value={p.id}>{formatFullName(p)}</option>
+            ))}
+          </select>
+          {patients.length === 0 && <div style={styles.empty}>Nessun paziente trovato nel database.</div>}
+        </div>
+      </div>
       {/* Alert: 2+ giorni consecutivi tristi */}
       <div style={styles.section}>
         {alertSadConsecutive && (
@@ -220,7 +324,7 @@ export default function ClinicalDashboard() {
               <strong style={{ color: '#991B1B', display: 'block', marginBottom: '4px' }}>
                 Attenzione
               </strong>
-              <span style={{ color: '#B91C1C', fontSize: '14px' }}>
+              <span style={{ color: '#B91C1C', fontSize: '0.875rem' }}>
                 Lo stato del paziente è risultato &quot;Triste&quot; per più di 2 giorni consecutivi. Valutare un contatto o un controllo.
               </span>
             </div>
@@ -230,24 +334,28 @@ export default function ClinicalDashboard() {
 
       {/* Mood Tracker - Trend */}
       <div style={styles.section}>
-        <div style={styles.card}>
+        <div style={{ ...styles.card, position: 'relative' }}>
           <div style={styles.cardTitle}>
             <TrendingUp size={22} color="var(--color-primary)" />
             <span>Mood Tracker (ultimi 7 giorni)</span>
           </div>
           {lineChartData.some((p) => p.mood != null) ? (
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={lineChartData} margin={{ top: 8, right: 8, left: -16, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="short" tick={{ fontSize: 12 }} />
-                <YAxis domain={[0, 2]} ticks={[0, 1, 2]} tick={{ fontSize: 12 }} tickFormatter={(v) => (v === 2 ? 'Felice' : v === 1 ? 'Neutro' : 'Triste')} />
-                <Tooltip
-                  formatter={(value) => [value === 2 ? 'Felice' : value === 1 ? 'Neutro' : 'Triste', 'Umore']}
-                  labelFormatter={(label, payload) => payload?.[0]?.payload?.date ?? label}
-                />
-                <Line type="monotone" dataKey="benessere" stroke="var(--color-primary)" strokeWidth={2} dot={{ r: 4 }} name="Umore" />
-              </LineChart>
-            </ResponsiveContainer>
+            <div style={{ height: 220, position: 'relative', width: '100%', display: 'block' }}>
+              {isReady && (
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={lineChartData} margin={{ top: 8, right: 8, left: -16, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis dataKey="short" tick={{ fontSize: '0.75rem' }} />
+                    <YAxis domain={[0, 2]} ticks={[0, 1, 2]} tick={{ fontSize: '0.75rem' }} tickFormatter={(v) => (v === 2 ? 'Felice' : v === 1 ? 'Neutro' : 'Triste')} />
+                    <Tooltip
+                      formatter={(value) => [value === 2 ? 'Felice' : value === 1 ? 'Neutro' : 'Triste', 'Umore']}
+                      labelFormatter={(label, payload) => payload?.[0]?.payload?.date ?? label}
+                    />
+                    <Line type="monotone" dataKey="benessere" stroke="var(--color-primary)" strokeWidth={2} dot={{ r: 4 }} name="Umore" />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           ) : (
             <div style={styles.empty}>Nessun dato umore negli ultimi 7 giorni.</div>
           )}
@@ -298,6 +406,56 @@ export default function ClinicalDashboard() {
         </div>
       </div>
 
+      {/* Registro Attività Dettagliato */}
+      <div style={styles.section}>
+        <div style={styles.card}>
+          <div style={styles.cardTitle}>
+            <Activity size={22} color="var(--color-primary)" />
+            <span>Registro Attività (Log)</span>
+          </div>
+          <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            {logs.length > 0 ? (
+              logs.map(log => (
+                <div key={log.id} style={{ ...styles.noteItem, padding: '10px 0', borderBottom: '1px solid #f0f0f0' }}>
+                  <div style={{ fontWeight: '600', color: 'var(--color-primary-dark)', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {log.action === 'task_completed' && (
+                      <>
+                        <AppIcon name="badge-check" size={14} color="primary" />
+                        Task Completato
+                      </>
+                    )}
+                    {log.action === 'task_uncompleted' && (
+                      <>
+                        <RotateCcw size={14} color="var(--color-primary)" />
+                        Task Ripristinato
+                      </>
+                    )}
+                    {log.action === 'task_added' && (
+                      <>
+                        <Plus size={14} color="var(--color-primary)" />
+                        Nuovo Task
+                      </>
+                    )}
+                    {log.action === 'mood_updated' && (
+                      <>
+                        <TrendingUp size={14} color="var(--color-primary)" />
+                        Umore Aggiornato
+                      </>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '0.875rem', margin: '4px 0' }}>{log.details}</div>
+                  <div style={{ ...styles.noteMeta, fontSize: '0.6875rem' }}>
+                    {new Date(log.created_at).toLocaleString('it-IT')}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={styles.empty}>Nessun'attività registrata.</div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Note Cliniche */}
       <div style={styles.section}>
         <div style={styles.card}>
@@ -311,8 +469,8 @@ export default function ClinicalDashboard() {
                 <div key={n.id} style={styles.noteItem}>
                   {n.content}
                   <div style={styles.noteMeta}>
-                    {new Date(n.createdAt).toLocaleString('it-IT')}
-                    {n.authorRole && ` · ${n.authorRole === 'healthcare' ? 'Operatore' : n.authorRole}`}
+                    {new Date(n.created_at).toLocaleString('it-IT')}
+                    {n.author_id === user.id ? ' · Tu' : ' · Medico'}
                   </div>
                 </div>
               ))

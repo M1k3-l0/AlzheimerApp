@@ -1,12 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import AppIcon from '../components/AppIcon';
+import {
+    withMockGroupMessages,
+    appendLocalGroupMessage,
+} from '../utils/chatMockData';
+import { formatFullName } from '../utils/avatarUtils';
 
 const ChatPage = () => {
     const [messages, setMessages] = useState([]);
+    const [hasMockThread, setHasMockThread] = useState(false);
     const [inputText, setInputText] = useState("");
     const [loading, setLoading] = useState(true);
     const messagesEndRef = useRef(null);
+    const messagesScrollerRef = useRef(null);
+    const shouldStickToBottomRef = useRef(true);
     const [viewportHeight, setViewportHeight] = useState(window.visualViewport ? window.visualViewport.height : window.innerHeight);
     const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
@@ -28,9 +36,9 @@ const ChatPage = () => {
                 setIsKeyboardOpen(false);
             }
             
-            // Scrolla in basso quando cambia l'altezza (es. tastiera si apre)
+            // Scrolla in basso solo se l'utente era già in fondo alla lista
             setTimeout(() => {
-                messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+                if (shouldStickToBottomRef.current) scrollToBottom(false);
             }, 100);
         };
 
@@ -47,13 +55,37 @@ const ChatPage = () => {
         };
     }, []);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const scrollToBottom = (smooth = true) => {
+        const scroller = messagesScrollerRef.current;
+        if (scroller) {
+            scroller.scrollTo({
+                top: scroller.scrollHeight,
+                behavior: smooth ? 'smooth' : 'auto',
+            });
+            return;
+        }
+        messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
     };
 
     useEffect(() => {
-        if (!loading) scrollToBottom();
-    }, [messages, loading]);
+        const scroller = messagesScrollerRef.current;
+        if (!scroller) return undefined;
+
+        const handleScroll = () => {
+            const distanceFromBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
+            shouldStickToBottomRef.current = distanceFromBottom < 80;
+        };
+
+        scroller.addEventListener('scroll', handleScroll, { passive: true });
+        return () => scroller.removeEventListener('scroll', handleScroll);
+    }, [loading]);
+
+    useEffect(() => {
+        if (!loading) {
+            shouldStickToBottomRef.current = true;
+            scrollToBottom(false);
+        }
+    }, [loading]);
 
     const user = JSON.parse(localStorage.getItem('alzheimer_user') || '{"name":"Utente"}');
     const currentUserId = user.id || (user.name + (user.surname || ''));
@@ -84,16 +116,23 @@ const ChatPage = () => {
 
     const fetchMessages = async () => {
         try {
-            const { data } = await supabase.from('messages').select('*').order('created_at', { ascending: true });
-            if (data) {
-                setMessages(data.map(msg => ({
-                    id: msg.id,
-                    text: msg.text,
-                    sender: msg.sender_id === currentUserId ? 'me' : 'other',
-                    senderName: msg.sender_name,
-                    time: new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
-                })));
-            }
+            const [{ data }, { data: profiles }] = await Promise.all([
+                supabase.from('messages').select('*').order('created_at', { ascending: true }),
+                supabase.from('profiles').select('*'),
+            ]);
+
+            const merged = withMockGroupMessages(data || [], profiles || []);
+            const isMock = !(data?.length);
+            setHasMockThread(isMock);
+
+            setMessages(merged.map((msg) => ({
+                id: msg.id,
+                text: msg.text,
+                sender: msg.sender_id === currentUserId ? 'me' : 'other',
+                senderName: msg.sender_name || formatFullName(profiles?.find((p) => p.id === msg.sender_id)) || 'Utente',
+                time: new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+                isMock: Boolean(msg.isMock),
+            })));
         } catch (e) {}
         setLoading(false);
     };
@@ -101,7 +140,14 @@ const ChatPage = () => {
     const handleSend = async () => {
         if (!inputText.trim()) return;
         const textToSend = inputText;
-        setInputText(""); 
+        setInputText("");
+
+        if (hasMockThread) {
+            setMessages((prev) => appendLocalGroupMessage(prev, currentUserId, user, textToSend));
+            shouldStickToBottomRef.current = true;
+            setTimeout(() => scrollToBottom(true), 50);
+            return;
+        }
 
         const { error } = await supabase.from('messages').insert([{
             text: textToSend,
@@ -113,7 +159,6 @@ const ChatPage = () => {
             setInputText(textToSend);
             alert("Errore invio");
         } else {
-            // Force scroll after send
             setTimeout(scrollToBottom, 50);
         }
     };
@@ -142,17 +187,19 @@ const ChatPage = () => {
         },
         messageList: {
             flex: 1,
+            minHeight: 0,
             minWidth: 0,
             overflowX: 'hidden',
             overflowY: 'auto',
             paddingTop: '24px',
-            paddingBottom: 'var(--section-gap)',
+            paddingBottom: 0,
             paddingLeft: 0,
             paddingRight: 0,
             display: 'flex',
             flexDirection: 'column',
             gap: '12px',
             WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain',
         },
         inputArea: {
             flexShrink: 0,
@@ -174,7 +221,7 @@ const ChatPage = () => {
             padding: '12px var(--content-padding-x)',
             borderRadius: 'var(--card-radius-lg)',
             border: '1px solid #E5E7EB',
-            fontSize: '16px',
+            fontSize: '1rem',
             outline: 'none',
             backgroundColor: 'var(--color-bg-primary)',
             minHeight: '44px',
@@ -185,7 +232,7 @@ const ChatPage = () => {
             height: '44px',
             borderRadius: '50%',
             backgroundColor: 'var(--color-primary)',
-            color: 'white',
+            color: 'var(--color-on-primary)',
             border: 'none',
             display: 'flex',
             justifyContent: 'center',
@@ -201,7 +248,7 @@ const ChatPage = () => {
             padding: sender === 'me' ? '0.4375rem 0.625rem' : '0.25rem 0.625rem',
             borderRadius: '0.75rem',
             backgroundColor: sender === 'me' ? 'var(--color-primary)' : 'white',
-            color: sender === 'me' ? 'white' : 'var(--color-text-primary)',
+            color: sender === 'me' ? 'var(--color-on-primary)' : 'var(--color-text-primary)',
             alignSelf: sender === 'me' ? 'flex-end' : 'flex-start',
             boxShadow: sender === 'me' ? '0 2px 10px rgba(136, 0, 68, 0.2)' : '0 2px 8px rgba(0,0,0,0.06)',
             borderBottomRightRadius: sender === 'me' ? '0.3125rem' : '0.75rem',
@@ -241,7 +288,11 @@ const ChatPage = () => {
 
     return (
         <div className="chat-page-wrapper chat-page" style={styles.container}>
-            <div className="messages-scroller chat-messages chat-messages-container" style={styles.messageList}>
+            <div
+                ref={messagesScrollerRef}
+                className="messages-scroller chat-messages chat-messages-container"
+                style={styles.messageList}
+            >
                 {messages.length === 0 && <div style={styles.emptyState}>Nessun messaggio ancora.<br/>Inizia la conversazione!</div>}
                 {messages.map(msg => (
                     <div key={msg.id} className={`message-bubble ${msg.sender === 'me' ? 'sent' : 'received'}`} style={styles.bubble(msg.sender)}>

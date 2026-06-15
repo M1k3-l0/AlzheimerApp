@@ -54,12 +54,14 @@ export function getLatestMood() {
   return history.length ? history[0].mood : null;
 }
 
+/** Colori umore – felice = salvia/teal (armonizza con il viola Memora) */
+export const MOOD_COLORS = {
+  happy: '#52A88E',
+  neutral: '#C9920A',
+  sad: '#DC4545',
+};
+
 /** Colori emoticon: sx=verde (felice), centro=giallo (neutro), dx=rosso (triste) */
 export function getMoodColor(mood) {
-  switch (mood) {
-    case 'happy': return '#22c55e';
-    case 'neutral': return '#eab308';
-    case 'sad': return '#ef4444';
-    default: return '#9CA3AF';
-  }
+  return MOOD_COLORS[mood] ?? '#9CA3AF';
 }

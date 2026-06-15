@@ -3,7 +3,16 @@
 **Progetto**: Memora - App per supporto Alzheimer  
 **Sviluppatori**: Daniele Spalletti & Michele Mosca (CosmoNet.info)  
 **Cliente**: Airalzh  
-**Ultimo Aggiornamento**: 27 Gennaio 2026, ore 02:40
+**Ultimo Aggiornamento**: 15 Giugno 2026
+
+---
+
+> [!IMPORTANT]
+> ### 🛑 REGOLA PER I COLLABORATORI
+> Ogni volta che viene effettuata una modifica al codice o alla configurazione, **È OBBLIGATORIO**:
+> 1. Aggiornare la sezione **CHANGELOG** in fondo a questo file con la data e il dettaglio dei cambiamenti.
+> 2. Se viene aggiunta una nuova funzionalità, creare la relativa sezione o spuntare le checklist sopra.
+> 3. Documentare eventuali nuove variabili d'ambiente o script SQL necessari.
 
 ---
 
@@ -63,7 +72,7 @@ Creare una Progressive Web App (PWA) per supportare pazienti affetti da Alzheime
 - [x] **Profilo**:
   - **Bordo colorato avatar** (🟢 Verde = Felice, 🟡 Giallo = Neutro, 🔴 Rosso = Triste)
   - **Emoji accanto al nome** (😊😐😢)
-  - Selettore mood per pazienti (3 pulsanti)
+  - ~~Selettore mood per pazienti (3 pulsanti)~~ → rimosso dal profilo (solo Home)
   - Visualizzazione mood per caregiver
 - [x] **Feed (MemoraBook)**:
   - Bordo colorato su avatar di ogni post
@@ -112,8 +121,20 @@ Creare una Progressive Web App (PWA) per supportare pazienti affetti da Alzheime
 - [x] **Mood selector** per pazienti (3 pulsanti interattivi cliccabili)
 - [x] Card informazioni (email, ruolo, data iscrizione)
 - [x] Card azioni rapide (Impostazioni, Post)
-- [x] Pulsante logout rosso
 - [x] Footer con credits
+
+### 10. **Geolocalizzazione (Safety & Location)** ✓
+- [x] Integrazione `@capacitor/geolocation`.
+- [x] Permessi nativi configurati (Android & iOS).
+- [x] Servizio `locationService.js` con Reverse Geocoding (da coordinate a indirizzo).
+- [x] Tasto "Aggiorna Posizione" nel profilo utente.
+- [x] Salvataggio posizione in Supabase (tabella `profiles`).
+- [x] Gestione permessi e fallback per Web App (PWA).
+
+### 11. **Manutenzione & Keep-Alive** ✓
+- [x] Configurazione **UptimeRobot** per evitare la pausa del database Supabase (Free Tier).
+- [x] Istruzioni dettagliate in `GUIDA_SUPABASE.md` per monitoraggio Porta 443.
+- [x] Script SQL per configurazione Storage bucket `avatars` con policy pubbliche.
 
 ### 10. **Impostazioni** ✓
 - [x] Gestione notifiche push (OneSignal + Fallback nativo)
@@ -151,6 +172,14 @@ Creare una Progressive Web App (PWA) per supportare pazienti affetti da Alzheime
 - [x] Active state evidenziato
 - [x] Animazioni di transizione
 
+### 14. **Simulazione Ruoli (Admin)** ✓
+- [x] Accesso protetto via email whitelist (Daniele & Michele)
+- [x] Switcher ruoli istantaneo (Paziente, Medico, Caregiver, Familiare)
+- [x] Persistenza locale del ruolo simulato
+- [x] Badge informativo globale `SIMULAZIONE: [RUOLO]`
+- [x] Accesso garantito alla console anche in modalità simulata
+- [x] Reset rapido al ruolo originale
+
 ---
 
 ## 🚧 DA COMPLETARE / MIGLIORARE
@@ -161,55 +190,55 @@ Creare una Progressive Web App (PWA) per supportare pazienti affetti da Alzheime
   - [ ] Test Android (Chrome, PWA installata)
   - [ ] Test notifiche push su tutti i device
   - [ ] Test mood tracking cross-device
-- [ ] **Gestione errori robusta**
+- [x] **Gestione errori robusta**
   - [ ] Offline mode (service worker)
   - [ ] Retry automatico chiamate API
-  - [ ] Toast notifications per feedback utente
+  - [x] Toast notifications per feedback utente
 - [ ] **Sicurezza**
   - [ ] Validazione input lato client
   - [ ] Sanitizzazione contenuti post/commenti
   - [ ] Rate limiting chiamate AI
   - [ ] HTTPS obbligatorio
 
-### Priorità Media 🟡
-- [ ] **Funzionalità Social**
-  - [ ] Modifica/eliminazione post propri
-  - [ ] Modifica/eliminazione commenti propri
-  - [ ] Filtri feed (solo amici, solo famiglia, ecc.)
-  - [ ] Ricerca post
-  - [ ] Hashtag
-- [ ] **Profilo Utente**
-  - [ ] Modifica foto profilo
-  - [ ] Modifica bio
-  - [ ] Modifica informazioni personali
-  - [ ] Privacy settings
-- [ ] **Attività**
-  - [ ] Notifiche promemoria attività
-  - [ ] Ricorrenza attività (giornaliera, settimanale)
-  - [ ] Categorie attività (farmaci, appuntamenti, ecc.)
-  - [ ] Statistiche completamento
-- [ ] **Chat AI**
-  - [ ] Cronologia conversazioni
-  - [ ] Esportazione conversazioni
-  - [ ] Suggerimenti contestuali
-  - [ ] Integrazione calendario per promemoria
+### Priorità Media 🟡 - COMPLETATO ✅
+- [x] **Funzionalità Social**
+  - [x] Modifica/eliminazione post propri
+  - [x] Modifica/eliminazione commenti propri
+  - [x] Filtri feed (per ruolo)
+  - [x] Ricerca post e autori
+  - [x] Hashtag cliccabili
+- [x] **Profilo Utente**
+  - [x] Modifica foto profilo
+  - [x] Modifica bio
+  - [x] Modifica nome/cognome
+  - [x] Privacy settings (nascondi email/posizione)
+- [x] **Attività**
+  - [x] Notifiche promemoria (OneSignal)
+  - [x] Ricorrenza attività (giornaliera, settimanale)
+  - [x] Categorie attività (farmaci, appuntamenti, ecc.)
+  - [x] Statistiche completamento (barra di progresso)
+- [x] **Chat AI**
+  - [x] Cronologia conversazioni (ai_chat_history)
+  - [x] Esportazione conversazioni (TXT)
+  - [x] Design premium e responsivo
 
 ### Priorità Bassa 🟢
 - [ ] **Gamification**
   - [ ] Badge achievements
   - [ ] Streak giornalieri
   - [ ] Punti per completamento attività
-- [ ] **Analytics**
-  - [ ] Dashboard statistiche per caregiver
-  - [ ] Grafici andamento umore
-  - [ ] Report settimanali/mensili
+- [x] **Analytics**
+  - [x] Dashboard statistiche per caregiver
+  - [x] Grafici andamento umore (AreaChart)
+  - [x] Statistiche attività (BarChart)
+  - [x] Insights automatici
 - [ ] **Integrations**
   - [ ] Calendario Google/Apple
   - [ ] Contatti telefono
   - [ ] Foto gallery
 - [ ] **Accessibilità**
   - [ ] Screen reader optimization
-  - [ ] Contrasto alto
+  - [x] Contrasto alto
   - [ ] Navigazione tastiera completa
   - [ ] Voice commands
 
@@ -308,7 +337,7 @@ AlzheimerApp/
 ## 🚀 DEPLOYMENT
 
 ### Vercel
-- **URL Produzione**: https://alzheimer-app.vercel.app
+- **URL Produzione**: https://alzheimerapp-chi.vercel.app
 - **Auto-deploy**: Push su branch `main` → deploy automatico
 - **Environment Variables**: Configurate su Vercel dashboard
 
@@ -371,18 +400,25 @@ AlzheimerApp/
 
 ---
 
-## 📅 CHANGELOG ULTIMA SESSIONE (27 Gen 2026)
+## 📅 CHANGELOG ULTIMA SESSIONE (15 Giugno 2026)
 
-### Ore 02:00 - 02:40
-- ✅ Aggiunto sistema completo mood tracking con:
-  - Bordi colorati avatar (verde/giallo/rosso)
-  - Emoji accanto ai nomi (😊😐😢)
-  - Persistenza in Supabase
-  - Visualizzazione su Profilo, Homepage, Feed
-- ✅ Fix chat layout per compatibilità sidebar PC
-- ✅ Fix pulsanti mood cliccabili (pointerEvents, userSelect)
-- ✅ Aggiunto author_id ai post per tracking mood
-- ✅ Fetch batch mood da profiles per performance
-- ✅ Aggiornato PROGETTO_RECAP.md con tutte le features
+### Audit, sicurezza client e pulizia codice
+- ✅ **Logout centralizzato** (`src/utils/logout.js`): Supabase `signOut`, pulizia storage, redirect `#/login`. Pulsante **Disconnetti** solo in Profilo.
+- ✅ **Auth hardened**: sessione Supabase obbligatoria; account bannati → logout; admin `/users` verifica ruolo da DB.
+- ✅ **DebugConsole dev-only**: non inclusa nel bundle production.
+- ✅ **Privacy pazienti**: impossibile nascondere email/posizione; sezione privacy nascosta in Profilo e Impostazioni.
+- ✅ **SOS FAB**: pulsante flottante caregiver/paziente con validazione `tel:` (`src/utils/phone.js`).
+- ✅ **UI/Branding**: badge ruolo viola, filtri feed, mock feed/chat/clinica, fix scroll, icona map-marker profilo.
+- ✅ **Pulizia**: rimossi `ListItem.jsx`, `debug_schema.js`, duplicati `assets/new_icon/`, logo login fix (`logo.svg`).
+- ✅ **Documento sicurezza**: `SICUREZZA_E_RACCOMANDAZIONI.md` per Daniele (RLS e roadmap backend).
+- 📄 **SQL**: bozza RLS in `sql_updates/security_rls_hardening.sql` (da applicare su Supabase).
 
-**Ultimo aggiornamento**: 27 Gennaio 2026, ore 02:40
+### Ore 14:00 - 15:30 (Sviluppo v2 — 11 Maggio 2026)
+- ✅ **Social Expansion**: Ricerca, hashtag, editing e cancellazione post/commenti.
+- ✅ **Profile & Privacy**: Modifica info personali e toggle privacy per email/posizione.
+- ✅ **Activity Upgrade**: Categorie, ricorrenza e progress bar dinamica in home.
+- ✅ **Analytics & AI**: Creazione `AnalyticsPage` con grafici Recharts e `AIChatPage` con persistenza e export.
+- ✅ **Iconografia**: Aggiunta nuove icone premium (brain, search, crown).
+- ✅ **Admin Simulation**: Implementato Role Switcher per Daniele e Michele con badge informativo globale.
+
+**Ultimo aggiornamento**: 15 Giugno 2026
